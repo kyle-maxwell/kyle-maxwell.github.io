@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Testing React-Native using ekke — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2019/05/22/testing-react-native-using-ekke/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2019/05/22/testing-react-native-using-ekke/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/ekke/react-phone.png">
+  
+
+  
+  <meta property="og:title" content="Testing React-Native using ekke — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="Introducing `ekke`, a new, unique test runner for React-Native. It allows you to execute your test code directly on the device, eliminating the need for imperfect mocks and enabling you to test in the same environment as your production users.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--testing-react-native-using-ekke">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    Testing React-Native using ekke
+  </h1>
+
+  <h1 id="introducing-ekke-a-unique-new-test-runner-for-react-native">Introducing <a href="https://github.com/godaddy/ekke"><code class="highlighter-rouge">ekke</code></a>, a unique new test runner for React-Native</h1>
+
+<p>We’re excited to announce the release of <a href="https://github.com/godaddy/ekke"><code class="highlighter-rouge">ekke</code></a>, a unique new test runner
+for React-Native. Unlike other testing frameworks, it doesn’t execute your tests
+in Node.js, with a bunch of mocks, but instead, it orchestrates the bundling and
+execution of tests directly <strong>inside your React-Native application</strong>. <code class="highlighter-rouge">ekke</code>
+allows your tests to fully access every API that the platform has to offer.</p>
+
+<p align="center">
+  <img width="800" height="607" src="/engineering/assets/images/ekke/ekke-react-native-intro.gif" />
+  <br />
+  <sub>Ekke in action: running a test suite inside React-Native and streaming results back to the CLI</sub>
+</p>
+
+<h3 id="why-did-we-build-another-testing-tool">Why did we build another testing tool?</h3>
+
+<p><code class="highlighter-rouge">ekke</code> is the open source rewrite of a tool that we (Arnout Kazemier,
+Martijn Swaagman, and Andrew Burgess) built during an internal hackathon we
+held many moons ago. We wanted to create a tool that allowed us to quickly
+verify that the code and its components would work in the different
+environments and platforms that React-Native supported. The obvious solution
+for this was to allow the tests to run as part of React-Native.</p>
+
+<p>There has been a lot of innovation regarding testing since we initially created
+this project back in 2016. But unfortunately, the anti-patterns haven’t changed.
+Many test suites are still executing their tests in a Node.js-based environment
+and use imperfect, and often out-of-date, mocking systems combined with
+<code class="highlighter-rouge">browser-env</code> polyfills to simulate React-Native.</p>
+
+<p>As React-Native runs on different platforms using different implementations
+(Objective-C for iOS, Java for Android), different JavaScript engines, and even
+different versions of those JavaScript engines, it’s no guarantee that your code
+works the same everywhere, and you may end up hitting inconsistencies.</p>
+
+<p>Running your tests in a heavily simulated environment is not an ideal solution.
+That’s why we hope that <code class="highlighter-rouge">ekke</code> can make a difference.</p>
+
+<h2 id="getting-started-with-ekke">Getting started with <code class="highlighter-rouge">ekke</code></h2>
+
+<p>To use <code class="highlighter-rouge">ekke</code>, you need to install it together with one of the supported test
+<a href="https://github.com/godaddy/ekke#runners">runners</a>. For the samples here, we’re going to use <code class="highlighter-rouge">mocha</code> as the test runner
+with <code class="highlighter-rouge">assume</code> as the assertion framework:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm install <span class="nt">--save-dev</span> ekke
+npm install <span class="nt">--save-dev</span> mocha assume
+</code></pre></div></div>
+
+<p>The library consists of React-Native component, <code class="highlighter-rouge">&lt;Ekke /&gt;</code>, and <code class="highlighter-rouge">ekke</code>, a CLI
+that installs locally. The <code class="highlighter-rouge">&lt;Ekke /&gt;</code> component needs to be integrated into a
+React-Native application to execute the tests. You can use an existing
+application like the one you’re currently developing or a new dedicated testing
+app that you create using <code class="highlighter-rouge">react-native init</code>.</p>
+
+<p>Import the <code class="highlighter-rouge">Ekke</code> component and add it somewhere in your component tree:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">YourActualApplicationHere</span> <span class="k">from</span> <span class="s1">'./some/path'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Ekke</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'ekke'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+
+<span class="kd">function</span> <span class="nx">App</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="o">&lt;&gt;</span>
+      <span class="o">&lt;</span><span class="nx">Ekke</span> <span class="p">{</span> <span class="cm">/* props are optional */</span> <span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>      <span class="o">&lt;</span><span class="nx">YourActualApplicationHere</span> <span class="o">/&gt;</span>
+    <span class="o">&lt;</span><span class="sr">/</span><span class="err">&gt;
+</span>  <span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The <code class="highlighter-rouge">&lt;Ekke /&gt;</code> component renders nothing in your application; it’s there to
+orchestrate the execution of the tests. To give you an idea of what is
+going on underneath the covers:</p>
+
+<ul>
+  <li>Waits for an active <code class="highlighter-rouge">ekke</code> CLI by searching for one at a regular interval.</li>
+  <li>Starts a WebSocket connection with the CLI to communicate.</li>
+  <li>Fetches the bundle that is created by the CLI’s <a href="https://github.com/facebook/metro">Metro bundler</a>.</li>
+  <li>Prepares the application for the execution of the bundle by setting up proxies
+for <code class="highlighter-rouge">console.log</code>’s and exception handling etc.</li>
+  <li>Evaluates the downloaded bundle in your application.</li>
+  <li>Executes the bundled test runner, and your tests.</li>
+  <li>Streams the test progress over the WebSocket connection.</li>
+  <li>Repeats this process, indefinitely.</li>
+</ul>
+
+<p>Now that the component is integrated in the application we can start writing
+our first <code class="highlighter-rouge">test.js</code>:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">View</span><span class="p">,</span> <span class="nx">AsyncStorage</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react-native'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">describe</span><span class="p">,</span> <span class="nx">it</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'mocha'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">render</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'ekke'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">assume</span> <span class="k">from</span> <span class="s1">'assume'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="s1">'My first Ekke test'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="s1">'works with built-in React-Native APIs'</span><span class="p">,</span> <span class="k">async</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="kr">await</span> <span class="nx">AsyncStorage</span><span class="p">.</span><span class="nx">setItem</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">,</span> <span class="s1">'bar'</span><span class="p">);</span>
+
+    <span class="kd">const</span> <span class="nx">value</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">AsyncStorage</span><span class="p">.</span><span class="nx">getItem</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">);</span>
+    <span class="nx">assume</span><span class="p">(</span><span class="nx">value</span><span class="p">).</span><span class="nx">equals</span><span class="p">(</span><span class="s1">'bar'</span><span class="p">);</span>
+  <span class="p">});</span>
+
+  <span class="nx">it</span><span class="p">(</span><span class="s1">'renders components with our render function'</span><span class="p">,</span> <span class="k">async</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="kd">class</span> <span class="nx">RedBox</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+      <span class="nx">render</span> <span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">(</span>
+          <span class="o">&lt;</span><span class="nx">View</span> <span class="nx">style</span><span class="o">=</span> <span class="sr">/</span><span class="err">&gt;
+</span>        <span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">const</span> <span class="nx">ref</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createRef</span><span class="p">();</span>
+    <span class="kr">await</span> <span class="nx">render</span><span class="p">(</span><span class="o">&lt;</span><span class="nx">RedBox</span> <span class="nx">width</span><span class="o">=</span><span class="p">{</span> <span class="mi">400</span> <span class="p">}</span> <span class="nx">height</span><span class="o">=</span><span class="p">{</span> <span class="mi">300</span> <span class="p">}</span> <span class="nx">ref</span><span class="o">=</span><span class="p">{</span> <span class="nx">ref</span> <span class="p">}</span><span class="sr">/&gt;</span><span class="se">)</span><span class="err">;
+</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">props</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">current</span><span class="p">;</span>
+    <span class="nx">assume</span><span class="p">(</span><span class="nx">props</span><span class="p">.</span><span class="nx">height</span><span class="p">).</span><span class="nx">equals</span><span class="p">(</span><span class="mi">300</span><span class="p">);</span>
+    <span class="nx">assume</span><span class="p">(</span><span class="nx">props</span><span class="p">.</span><span class="nx">width</span><span class="p">).</span><span class="nx">equals</span><span class="p">(</span><span class="mi">400</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>This simple test suite will interact with the built-in <code class="highlighter-rouge">AsyncStorage</code> API,
+and render an example component on screen. All that is left now is to send
+the test to <code class="highlighter-rouge">&lt;Ekke /&gt;</code> component using the <code class="highlighter-rouge">ekke run</code> CLI command:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Make sure that the simulator of your choice is running.</span>
+react-native run-ios <span class="c"># os react-native run-android</span>
+
+<span class="c"># Execute the locally installed `ekke` CLI to start the tests.</span>
+<span class="c"># We use `npx`, a tool provided by `npm` to execute locally installed</span>
+<span class="c"># binaries.</span>
+npx ekke run test.js <span class="nt">--using</span> mocha
+</code></pre></div></div>
+
+<p>And watch the magic unfold. The sequence of events that will happen:</p>
+
+<ul>
+  <li>Creates and configures a new dedicated <a href="https://github.com/facebook/metro">Metro</a> bundler which
+will combine your selected test runner, and test files in a single bundle.</li>
+  <li>Starts a WebSocket server so it can communicate with the <code class="highlighter-rouge">&lt;Ekke /&gt;</code> component.</li>
+  <li>Informs the component that you have some tests to run.</li>
+  <li>Waits for the progress to be streamed back over established WebSocket
+connection.</li>
+  <li>Closes the process with exit code 0 if your tests pass, or 1 when there was
+a failure.</li>
+</ul>
+
+<p><img src="/engineering/assets/images/ekke/ekke-result.png" alt="Our test suite passes" /></p>
+
+<p>It’s that simple to use <code class="highlighter-rouge">ekke</code>. The project is now available on:</p>
+
+<ul>
+  <li><strong>GitHub</strong>: <a href="https://github.com/godaddy/ekke">https://github.com/godaddy/ekke</a></li>
+  <li><strong>NPM</strong>: <a href="https://www.npmjs.com/package/ekke">https://www.npmjs.com/package/ekke</a></li>
+</ul>
+
+<p><sub>(If you’re wondering why it’s called <code class="highlighter-rouge">ekke</code>, it’s short for
+<em>Ekke-Ekke-Ekke-Ekke PTANG Zoo Boing! Z’ nourrwringmm</em>, also known as the
+Knights who until recently said ‘Ni!’, from the film Monty Python and the Holy
+Grail)</sub></p>
+
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://twitter.com/3rdEden">
+          <img class="rounded mr-2" src="https://avatars2.githubusercontent.com/u/28071?s=460&v=4" alt="Arnout Kazemier" width="64">
+          <span class="author-details">
+            <h6>Arnout Kazemier</h6>
+            
+            <h7>Principal Software Engineer</h7>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

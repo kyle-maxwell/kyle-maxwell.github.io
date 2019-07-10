@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>An Intuitive Node.js Client for the Kubernetes API — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2018/04/10/an-intuitive-nodejs-client-for-the-kubernetes-api/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2018/04/10/an-intuitive-nodejs-client-for-the-kubernetes-api/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/headers/kubernetes-client.jpg">
+  
+
+  
+  <meta property="og:title" content="An Intuitive Node.js Client for the Kubernetes API — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="This post explains the motivation for and design of kubernetes-client. We provide an short example on how to write your custom Kubernetes extentions using Node.js and kubernetes-client.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--an-intuitive-nodejs-client-for-the-kubernetes-api">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    An Intuitive Node.js Client for the Kubernetes API
+  </h1>
+
+  <p>Do you use Node.js and Kubernetes?  Have you wanted to invoke the Kubernetes API directly in Node.js?  Perhaps you’ve wanted to implement a Custom Resource Definition supported by a controller written in Node.js, or you’ve wanted to build some custom tools for your CICD pipeline.  GoDaddy uses Kubernetes and Node.js, and software developers at GoDaddy often find themselves in a position where it makes sense to call the Kubernetes API directly.  We wrote <a href="https://github.com/godaddy/kubernetes-client">kubernetes-client</a> to provide an easy-to-use Node.js interface to the Kubernetes API.</p>
+
+<p>One challenge with writing an interface to the Kubernetes API is the rapid evolution of Kubernetes.  The Kubernetes community releases a new minor version every <a href="https://gravitational.com/blog/kubernetes-release-cycle/">three months</a>. These “minor” releases include a raft of new features that help solve problems or improve existing solutions; and the community doesn’t hesitate to remove features or evolve them in non-backwards compatible ways (<em>e.g.</em>, [<a href="https://kubernetes.io/docs/tasks/access-kubernetes-api/migrate-third-party-resource/">1</a>]) It’s an explicit expectation that cluster operators keep their clusters reasonably up-to-date with the latest release, and the community aims to support only three minor releases [<a href="https://github.com/kubernetes/community/blob/master/contributors/design-proposals/release/versioning.md">2</a>]. In order to follow best practices and leverage new features, kubernetes-client needs to keep pace with the Kubernetes release cycle.</p>
+
+<p>Our first approach was to manually implement support for new features.  We weren’t quite able to keep up with new features: frequently we’d get issues asking to support new features before kubernetes-client contributors implemented them.  Even if adding support for new features was relatively simple, it was a maintenance tax we felt like we should avoid paying.</p>
+
+<p>One potential solution is to use <a href="https://github.com/wcandillon/swagger-js-codegen">swagger-js-codegen</a> to generate API bindings from Swagger or OpenAPI specifications. We could either generate API bindings dynamically (although there’s some practical performance problems we would need to address first); or generate they statically and distribute them with kubernetes-client.</p>
+
+<p>We like the Swagger-based approach because it alleviates a maintenance burden, but we do not like the unwieldy client and function names that many of the current tools generate. For example, function names are often based on the Swagger operation ID (<em>e.g.</em>, createCoreV1NamespacedPod) and in many instances there isn’t an obvious mapping from the Kubernetes API reference documentation to the operation ID. We wanted our interface to have a more direct mapping to the Kubernetes API documentation and to be close to what you might expect from a handwritten implementation for Node.js.</p>
+
+<p>The approach we’ve taken with kubernetes-client is to map path items (<em>e.g.</em>, “namespace”) to chained objects, and to map path parameters (“path templates” in Swagger terminology) to function arguments. We add HTTP operations (like “GET”) as methods on the chained objects. The end result is an interface where the API calls you make in Node.js closely resemble the paths and descriptions in the Kubernetes API reference documentation.</p>
+
+<p>To make this more concrete, here’s a snippet for initializing a kubernetes-client instance and fetching all the Deployments in the default Namespace:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">const</span> <span class="nx">Client</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'kubernetes-client'</span><span class="p">).</span><span class="nx">Client</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">config</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'kubernetes-client'</span><span class="p">).</span><span class="nx">config</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Client</span><span class="p">({</span> <span class="na">config</span><span class="p">:</span> <span class="nx">config</span><span class="p">.</span><span class="nx">fromKubeconfig</span><span class="p">(),</span> <span class="na">version</span><span class="p">:</span> <span class="s1">'1.9'</span> <span class="p">});</span>
+<span class="kd">const</span> <span class="nx">deployments</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">api</span><span class="p">.</span><span class="nx">v1</span><span class="p">.</span><span class="nx">namespaces</span><span class="p">(</span><span class="s1">'default'</span><span class="p">).</span><span class="nx">deployments</span><span class="p">.</span><span class="kd">get</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>With kubernetes-client 5.0.0 we added support for generating these bindings dynamically from your kube-apiserver’s swagger.json.  You can now do the following to get a client that matches the operations your Kubernetes cluster supports:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Client</span><span class="p">({</span> <span class="na">config</span><span class="p">:</span> <span class="nx">config</span><span class="p">.</span><span class="nx">fromKubeconfig</span><span class="p">()</span> <span class="p">});</span>
+<span class="kr">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">loadSpec</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>We think the kubernetes-client interface makes it easy to write and maintain code that calls the Kubernetes API directly.  To illustrate
+that, here’s snippets for a couple of ways that we use kubernetes client internally at GoDaddy (we plan on releasing all the all code associated with these projects in upcoming months).</p>
+
+<div class="card mb-3 shadow border-0">
+  <div class="card-body p-0">
+    <p class="card-text p-3 mb-0 bg-secondary-base text-light">
+      At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+    </p>
+    <div class="card-footer text-muted">
+      <a class="btn btn-primary shadowed" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&amp;utm_source=godaddy-oss" title="Work at GoDaddy">
+        Join us!
+      </a>
+    </div>
+  </div>
+</div>
+
+<h3 id="example-deployment-notifier">Example: Deployment Notifier</h3>
+
+<p>It is often useful to track the state of your Deployments outside of your Kubernetes API. For example, <a href="https://docs.newrelic.com/docs/apm/new-relic-apm/maintenance/record-deployments">there is a New Relic API to record changes to Deployments</a>. If your automation deploys a new image, or if a Horizontal Pod Autoscaler scales out a Deployment, automatically notifying New Relic makes it easy to track potential performance improvements or regressions. Many third party services offer similar APIs for notifying them about changes to deployed services (<em>e.g.</em>, <a href="https://developer.github.com/v3/repos/deployments/">GitHub Deployments</a>, <a href="https://docs.servicenow.com/bundle/kingston-it-service-management/page/product/change-management/task/t_CreateAChange.html">ServiceNow Change Requests</a>, <a href="https://docs.gitlab.com/ee/ci/environments.html">GitLab deployments</a>, <a href="https://api.slack.com/incoming-webhooks">Slack Incoming Webhooks</a>, …).</p>
+
+<p>We wrote an example, called the <a href="https://github.com/godaddy/kubernetes-client/blob/master/examples/deployment-notifier.js">Deployment Notifier</a>, that logs messages to the console when specific Deployments change. Deployment Notifier uses a DeploymentNotifier Custom Resource Definition (CRD) to allow Kubernetes users to specify which Deployments they want notifications on, and a <a href="https://kubernetes.io/docs/concepts/api-extension/custom-resources/#custom-controllers">custom controller</a> implemented with kubernetes-client to process DeploymentNotifiers and “notify” the console at the right time.</p>
+
+<h4 id="extending-the-api-with-a-deploymentnotifier">Extending the API with a DeploymentNotifier</h4>
+
+<p>The first thing our custom controller does is create an API client and attempt to extend the Kubernetes API by creating a DeploymentNotifier CRD. We create the DeploymentNotifier in the controller to make it easy to install Deployment Notifier on a new Kubernetes cluster simply by running the controller.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="kd">function</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">try</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Client</span><span class="p">({</span> <span class="na">config</span><span class="p">:</span> <span class="nx">config</span><span class="p">.</span><span class="nx">fromKubeconfig</span><span class="p">()</span> <span class="p">});</span>
+    <span class="kr">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">loadSpec</span><span class="p">();</span>
+
+    <span class="c1">//</span>
+    <span class="c1">// Create the CRD if it doesn't already exist.</span>
+    <span class="c1">//</span>
+    <span class="k">try</span> <span class="p">{</span>
+      <span class="kr">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">apis</span><span class="p">[</span><span class="s1">'apiextensions.k8s.io'</span><span class="p">].</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">customresourcedefinitions</span><span class="p">.</span><span class="nx">post</span><span class="p">({</span> <span class="na">body</span><span class="p">:</span> <span class="nx">crd</span> <span class="p">});</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">//</span>
+      <span class="c1">// API returns a 409 Conflict if CRD already exists.</span>
+      <span class="c1">//</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">statusCode</span> <span class="o">!==</span> <span class="mi">409</span><span class="p">)</span> <span class="k">throw</span> <span class="nx">err</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">//</span>
+    <span class="c1">// Add endpoints to our client</span>
+    <span class="c1">//</span>
+    <span class="nx">client</span><span class="p">.</span><span class="nx">addCustomResourceDefinition</span><span class="p">(</span><span class="nx">crd</span><span class="p">);</span>
+
+    <span class="c1">//</span>
+    <span class="c1">// Watch DeploymentNotifiers.</span>
+    <span class="c1">//</span>
+    <span class="nx">watchDeploymentNotifiers</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">'Error: '</span><span class="p">,</span> <span class="nx">err</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nx">main</span><span class="p">();</span>
+</code></pre></div></div>
+
+<h4 id="watching-deploymentnotifiers">Watching DeploymentNotifiers</h4>
+
+<p>After extending the Kubernetes API, the Deployment Notifier controller begins watching events on DeploymentNotifier objects.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">function</span> <span class="nx">watchDeploymentNotifiers</span><span class="p">(</span><span class="nx">client</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">stream</span> <span class="o">=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">apis</span><span class="p">[</span><span class="s1">'kubernetes-client.io'</span><span class="p">].</span><span class="nx">v1</span><span class="p">.</span><span class="nx">watch</span><span class="p">.</span><span class="nx">deploymentnotifiers</span><span class="p">.</span><span class="nx">getStream</span><span class="p">();</span>
+  <span class="kd">const</span> <span class="nx">jsonStream</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">JSONStream</span><span class="p">();</span>
+  <span class="nx">stream</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">jsonStream</span><span class="p">);</span>
+
+  <span class="kd">const</span> <span class="nx">watchers</span> <span class="o">=</span> <span class="p">{};</span>
+  <span class="nx">jsonStream</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'data'</span><span class="p">,</span> <span class="k">async</span> <span class="nx">event</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">id</span> <span class="o">=</span> <span class="s2">`</span><span class="p">${</span> <span class="nx">event</span><span class="p">.</span><span class="nx">object</span><span class="p">.</span><span class="nx">metadata</span><span class="p">.</span><span class="nx">namespace</span> <span class="p">}</span><span class="s2">/</span><span class="p">${</span> <span class="nx">event</span><span class="p">.</span><span class="nx">object</span><span class="p">.</span><span class="nx">metadata</span><span class="p">.</span><span class="nx">name</span> <span class="p">}</span><span class="s2">`</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">'ADDED'</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">//</span>
+      <span class="c1">// Watch the Deployment for each DeploymentNotifier.</span>
+      <span class="c1">//</span>
+      <span class="nx">watchers</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="nx">watchDeployment</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span> <span class="nx">event</span><span class="p">.</span><span class="nx">object</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">'DELETED'</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">watchers</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">abort</span><span class="p">();</span>
+      <span class="k">delete</span> <span class="nx">watchers</span><span class="p">[</span><span class="nx">id</span><span class="p">];</span>
+    <span class="p">}</span>
+  <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The function <code class="highlighter-rouge">watchDeploymentNotifiers</code> is responsible for detecting when users add new DeploymentNotifier objects and then calling <code class="highlighter-rouge">watchDeployment</code>.  <code class="highlighter-rouge">watchDeployment</code> is a function that monitors a specific Deployment and returns a Node.js stream. <code class="highlighter-rouge">watchDeploymentNotifiers</code> saves a mapping from DeploymentNotifier name to stream. When a user deletes a DeploymentNotifier, <code class="highlighter-rouge">watchDeploymentNotifiers</code> cleans up by aborting the stream associated with that DeploymentNotifier.</p>
+
+<h4 id="watching-deployments">Watching Deployments</h4>
+
+<p>The last critical piece of functionality the Deployment Notifier implements is watching events on Deployment objects that have an associated DeploymentNotifier object and “notifying” when a relevant event occurs.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">function</span> <span class="nx">watchDeployment</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span> <span class="nx">notifier</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="nx">version</span> <span class="o">=</span> <span class="s1">'(none)'</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">stream</span> <span class="o">=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">apis</span><span class="p">.</span><span class="nx">apps</span><span class="p">.</span><span class="nx">v1beta</span><span class="p">.</span><span class="nx">watch</span><span class="p">.</span><span class="nx">ns</span><span class="p">(</span><span class="s1">'default'</span><span class="p">).</span><span class="nx">deploy</span><span class="p">(</span><span class="nx">notifier</span><span class="p">.</span><span class="nx">deploymentName</span><span class="p">).</span><span class="nx">getStream</span><span class="p">();</span>
+  <span class="kd">const</span> <span class="nx">jsonStream</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">JSONStream</span><span class="p">();</span>
+  <span class="nx">stream</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">jsonStream</span><span class="p">);</span>
+
+  <span class="nx">jsonStream</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'data'</span><span class="p">,</span> <span class="k">async</span> <span class="nx">event</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">newVersion</span> <span class="o">=</span> <span class="nx">event</span><span class="p">.</span><span class="nx">object</span><span class="p">.</span><span class="nx">spec</span><span class="p">.</span><span class="nx">template</span><span class="p">.</span><span class="nx">spec</span><span class="p">.</span><span class="nx">containers</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">container</span> <span class="o">=&gt;</span> <span class="nx">container</span><span class="p">.</span><span class="nx">image</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s1">','</span><span class="p">);</span>
+    <span class="c1">//</span>
+    <span class="c1">// Simple "notification": log to the console. A better option could be</span>
+    <span class="c1">// calling the New Relic Deployment API or GithHub Deployment Status or ...</span>
+    <span class="c1">//</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">`DeploymentNotifier </span><span class="p">${</span> <span class="nx">notifier</span><span class="p">.</span><span class="nx">metadata</span><span class="p">.</span><span class="nx">name</span> <span class="p">}</span><span class="s2">: </span><span class="p">${</span> <span class="nx">event</span><span class="p">.</span><span class="nx">object</span><span class="p">.</span><span class="nx">metadata</span><span class="p">.</span><span class="nx">name</span> <span class="p">}</span><span class="s2"> </span><span class="p">${</span> <span class="nx">event</span><span class="p">.</span><span class="nx">type</span> <span class="p">}</span><span class="s2">`</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">version</span> <span class="o">!==</span> <span class="nx">newVersion</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">`</span><span class="p">${</span> <span class="nx">version</span> <span class="p">}</span><span class="s2"> -&gt; </span><span class="p">${</span> <span class="nx">newVersion</span> <span class="p">}</span><span class="s2">`</span><span class="p">,</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">notifier</span><span class="p">.</span><span class="nx">notify</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="mi">2</span><span class="p">));</span>
+      <span class="nx">version</span> <span class="o">=</span> <span class="nx">newVersion</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">});</span>
+
+  <span class="k">return</span> <span class="nx">stream</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">watchDeployment</code> is similar to <code class="highlighter-rouge">watchDeploymentNotifiers</code> except that it’s watching for changes to Deployment objects. In this example we are interested in changes to any container image. If a user updates a container images, for example using <code class="highlighter-rouge">kubectl set image</code>, <code class="highlighter-rouge">watchDeployment</code> calls <code class="highlighter-rouge">console.log</code> to log the update. As discussed above, a more useful notification might be to call a third party API, like New Relic’s Deployment API.</p>
+
+<h3 id="next-up">Next up</h3>
+
+<p>We hope that kubernetes-client provides an intuitive Kubernetes API client for developers building services that call the Kubernetes API directly. The kubernetes-client GitHub project has a handful of <a href="https://github.com/godaddy/kubernetes-client#more-examples">examples</a> to help jump start potential projects. We are also planning on releasing our internal projects that leverage kubernetes-client, including a production-ready version of the Deployment Notifier example.</p>
+
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://github.com/silasbw">
+          <img class="rounded mr-2" src="https://avatars1.githubusercontent.com/u/1919311?s=400&v=4" alt="Silas Boyd-Wickizer" width="64">
+          <span class="author-details">
+            <h6>Silas Boyd-Wickizer</h6>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Interfaces and Metaclasses in Python — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2018/12/20/python-metaclasses/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2018/12/20/python-metaclasses/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/headers/python-metaclass.jpg">
+  
+
+  
+  <meta property="og:title" content="Interfaces and Metaclasses in Python — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="Python's metaclasses are an obscure and often misunderstood feature of the language. This post introduces readers to metaclasses hands-on by implementing interfaces, motivated by Python's abstract base class, or ABC.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--python-metaclasses">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+<div class="cover-image" style="background-image: url(/engineering/assets/images/headers/python-metaclass.jpg);"></div>
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    Interfaces and Metaclasses in Python
+  </h1>
+
+  <p><em>Note: All code in this post is assumed to be for Python 3. There are subtle differences in the way classes are handled between Python 2 and 3 (see <a href="https://www.python.org/doc/newstyle/">here</a>).</em></p>
+
+<p>Have you ever heard of <em>metaclasses</em> in Python? I hadn’t until recently, and I had been using them for months without
+actually knowing how they work. Python’s metaclass functionality is one of those language features you’ll probably never
+need to know about, much less mess with, but it offers some keen insight into Python’s OOP model, and is actually quite powerful.</p>
+
+<p>I discovered metaclasses after encountering a pretty common problem. One of our repos contains a class that pulls a bunch of data
+over the network, and generally takes a pretty long time to run. As it turned out, we didn’t want to spend all this time gathering data
+every time we ran the service, so we decided to create a dummy class that we could swap in for the real one. In order for everything
+to continue working, both classes needed to expose identical looking functions. Instead of relying on Python’s <a href="http://www.voidspace.org.uk/python/articles/duck_typing.shtml">duck typing</a>, this sounded
+like a great place to define an interface that both classes could inherit from, to ensure the callers that nothing would break regardless of
+which class was being used. Unfortunately, Python doesn’t <em>have</em> interfaces, or at least, not quite built into the language.</p>
+
+<p>Enter Python’s <a href="https://docs.python.org/3/library/abc.html">abstract base class</a>, or, cutely, <em>ABC</em>. Functionally, abstract base classes
+let you define a class with <em>abstract methods</em>, which all subclasses <em>must</em> implement in order to be initialized. ABCs are extremely simple
+to use, and do exactly what they say on the tin. Here’s how you might solve a simplified version of the problem from above using ABCs in Python 3.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="k">class</span> <span class="nc">NetworkInterface</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">RealNetwork</span><span class="p">(</span><span class="n">NetworkInterface</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># connect to something for real</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># transfer a bunch of data</span>
+        <span class="k">return</span>
+
+
+<span class="k">class</span> <span class="nc">FakeNetwork</span><span class="p">(</span><span class="n">NetworkInterface</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># don't actually connect to anything!</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># don't transfer anything!</span>
+        <span class="k">return</span>
+</code></pre></div></div>
+
+<p>Our actual abstract base class that defines the interface our classes inherit from is <code class="highlighter-rouge">NetworkInterface</code>, which itself inherits from <code class="highlighter-rouge">ABC</code>. <code class="highlighter-rouge">abstractmethod</code> is just a <a href="https://realpython.com/primer-on-python-decorators/">decorator</a> which marks methods as, well, abstract – subclasses have to implement them. This is all fine, but what has this really gotten us? Let’s get rid of <code class="highlighter-rouge">transfer</code> from <code class="highlighter-rouge">FakeNetwork</code> and find out.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">...</span>
+<span class="k">class</span> <span class="nc">FakeNetwork</span><span class="p">(</span><span class="n">NetworkInterface</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># don't actually connect to anything!</span>
+        <span class="k">return</span>
+
+<span class="n">tmp</span> <span class="o">=</span> <span class="n">FakeNetwork</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>Whoops! We get an error: <code class="highlighter-rouge">TypeError: Can't instantiate abstract class FakeNetwork with abstract methods transfer</code> – that’s the abstract base class enforcing the interface. As long as <code class="highlighter-rouge">FakeNetwork</code> is missing <code class="highlighter-rouge">transfer</code>, we can’t create an instance of it. Neat.</p>
+
+<p>This worked well for our use case, but I was left a bit dissatisfied. How does it all work? In reality, all the magic is happening through the use of metaclasses, but Python sneakily hides that from us by having us inherit from <code class="highlighter-rouge">ABC</code>, just a normal class inheritence. <code class="highlighter-rouge">ABC</code> however, is actually a totally empty class! All it does is set its <em>metaclass</em> to be <code class="highlighter-rouge">ABCMeta</code>, which is where all the work gets done.</p>
+
+<h3 id="metaclasses">Metaclasses</h3>
+
+<p>So what’s the deal with this metaclass stuff? As you may have heard, everything in Python is an object. Really, <em>everything</em>. Say we have the following</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">bar</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>All objects have types, and since everything is an object, everything has a type. If we call <code class="highlighter-rouge">type(bar)</code>, we see that <code class="highlighter-rouge">bar</code> has type <code class="highlighter-rouge">Foo</code>, as we might expect. What about <code class="highlighter-rouge">type(Foo)</code> then? We get <code class="highlighter-rouge">type</code>! The type of the class <code class="highlighter-rouge">Foo</code> itself (as opposed to an <em>instance</em> of <code class="highlighter-rouge">Foo</code>) is <code class="highlighter-rouge">type</code>. <code class="highlighter-rouge">type</code> is our first real example of a metaclass. All classes in Python 3 are instances of the metaclass <code class="highlighter-rouge">type</code>. In the same way that you call a class to initialize an object, you call a <em>metaclass</em> to initialize a class. Typically, this means that when the interpreter sees a class definition, it calls <code class="highlighter-rouge">type</code> to create the class, allowing us to call it to create instances later on.</p>
+
+<p>This means that <code class="highlighter-rouge">type</code> can do more than just tell us the type of stuff. When called with the correct arguments, <code class="highlighter-rouge">type</code> can be used to programmatically <em>create classes</em>. Observe.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">Foo</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s">'Foo'</span><span class="p">,</span> <span class="p">(</span><span class="nb">object</span><span class="p">,),</span> <span class="p">{</span><span class="s">'__init__'</span><span class="p">:</span> <span class="n">init</span><span class="p">})</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">()</span>
+<span class="n">a</span><span class="o">.</span><span class="n">x</span> <span class="c"># returns 10</span>
+</code></pre></div></div>
+
+<p>The first argument to <code class="highlighter-rouge">type</code> is the desired name of the created class, followed by a list of classes to inherit from. The last argument defines the namespace of the class, or what will become its <code class="highlighter-rouge">__dict__</code> attribute – this is the place to define methods, etc. Used this way, ‘type’ lets us define classes dynamically. Understanding how <code class="highlighter-rouge">type</code> works under the hood is important in understanding how class definition works, and how we can customize and extend this process.</p>
+
+<p>Recall that all Python classes are instances of <code class="highlighter-rouge">type</code>. In the first <code class="highlighter-rouge">Foo</code> example above, when the interpreter sees the <code class="highlighter-rouge">Foo</code> class definition, it creates a <code class="highlighter-rouge">type</code> object named <code class="highlighter-rouge">Foo</code> in the enclosing namespace. To do this, it calls <code class="highlighter-rouge">type.__new__</code> (just as <code class="highlighter-rouge">__new__</code> is called for regular old classes) which creates and returns the <code class="highlighter-rouge">type</code> object named <code class="highlighter-rouge">Foo</code>. The interpreter then calls <code class="highlighter-rouge">type.__init__</code>, using the <code class="highlighter-rouge">type</code> instance returned from <code class="highlighter-rouge">type.__new__</code> as the first argument (“<code class="highlighter-rouge">self</code>”). This is the typical way class instances are created as well (e.g., <code class="highlighter-rouge">x = Foo()</code>). The difference here is that the <code class="highlighter-rouge">__new__</code> and <code class="highlighter-rouge">__init__</code> methods of the metaclass are executed before we ever create an instance of the class itself, and can be used to augment or otherwise change the behavior of the overall class. While we can’t modify the behavior of <code class="highlighter-rouge">type</code> directly, by subclassing <code class="highlighter-rouge">type</code>, we can override the <code class="highlighter-rouge">__new__</code> and <code class="highlighter-rouge">__init__</code> methods to define custom behavior.</p>
+
+<h3 id="writing-our-own-abc">Writing our own ABC</h3>
+<p>This all may be a bit hard to grok, but it should hopefully become clearer when made more concrete. Let’s see if we can put this to use by trying to implement a basic version of abstract base classes ourselves, using metaclasses. Metaclasses are the perfect way to solve this problem, since they allow us to run code at the time of class definition. This lets us potentially raise an error if the class definition is incorrect, before we ever get the chance to create an instance of the class. I tend to think of this as somewhat similar to static checking in compiled languages.</p>
+
+<p>For this example, let’s just focus on forcing classes to implement any methods marked as “abstract” in the class hierarchy. Our version of an interface will be a bit stronger than Python’s ABC, in that it won’t allow us to even <em>define</em> a class that fails to implement all necessary methods, let alone <em>initialize</em> an instance of one.  Using our <code class="highlighter-rouge">NetworkInterface</code> example from earlier, let’s first figure out a way to mark methods as “abstract”. Decorators are a cheap way to do this:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">abstractfunc</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="n">func</span><span class="o">.</span><span class="n">__isabstract__</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="n">func</span>
+</code></pre></div></div>
+
+<p>With our decorator in place, let’s fill in some boilerplate. We’ll want to define a custom metaclass, with dummy methods <code class="highlighter-rouge">__init__</code> and <code class="highlighter-rouge">__new__</code>, and have our desired abstract base class inherit from it. Note that the name <code class="highlighter-rouge">Interface</code> for our metaclass below has nothing to do with the “Interface” in our <code class="highlighter-rouge">NetworkInterface</code> class – we could’ve named <code class="highlighter-rouge">Interface</code> anything we want.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Interface</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">metaclass</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">NetworkInterface</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">Interface</span><span class="p">):</span>
+
+    <span class="nd">@abstractfunc</span>
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractfunc</span>
+    <span class="k">def</span> <span class="nf">transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+</code></pre></div></div>
+
+<p>Now, on class definition, both <code class="highlighter-rouge">NetworkInterface</code> and anything that inherits it will run <code class="highlighter-rouge">Interface.__new__</code> and <code class="highlighter-rouge">Interface.__init__</code>. For any class with metaclass <code class="highlighter-rouge">Interface</code>, we want Python to raise an exception if the class doesn’t implement all methods marked as abstract in its parent classes. For bookkeeping purposes, let’s augment every class that inherits from <code class="highlighter-rouge">Interface</code> with two attributes: a list of all its methods, and a list of just its abstract methods. We can do this in <code class="highlighter-rouge">__new__</code>, by augmenting the class namespace before the class is even created.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Interface</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">metaclass</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">'abstract_methods'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Interface</span><span class="o">.</span><span class="n">_get_abstract_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">)</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">'all_methods'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Interface</span><span class="o">.</span><span class="n">_get_all_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">)</span>
+        <span class="n">cls</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">metaclass</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cls</span>
+
+    <span class="k">def</span> <span class="nf">_get_abstract_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">namespace</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s">'__isabstract__'</span><span class="p">,</span> <span class="bp">False</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">_get_all_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">namespace</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">val</span><span class="p">)]</span>
+</code></pre></div></div>
+
+<p>Our two helper methods just iterate over the objects in the class’ namespace and append the object names to a list if the appropriate conditions apply. We add these lists to the class’ namespace in <code class="highlighter-rouge">__new__</code>, which we can then refer to in <code class="highlighter-rouge">__init__</code> later on. Since <code class="highlighter-rouge">Interface.__new__</code> is called for any class that inherits from <code class="highlighter-rouge">Interface</code>, we’re guaranteed that all such classes will have the <code class="highlighter-rouge">abstract_methods</code> and <code class="highlighter-rouge">all_methods</code> attributes. This means that in <code class="highlighter-rouge">Interface.__init__</code>, we can iterate over all the abstract methods of the parent class, and make sure that a method with the same name exists in the list of all methods for the <em>current</em> class, the one that’s currently being initialized. If we <em>don’t</em> find a method in the class with the same name as an abstract method from the parent, we raise an exception. This easily extends to cases of multiple inheritance, by repeating this process for each base class present in <code class="highlighter-rouge">bases</code>. Putting everything together, we end up with something like this:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">abstractfunc</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="n">func</span><span class="o">.</span><span class="n">__isabstract__</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="n">func</span>
+
+<span class="k">class</span> <span class="nc">Interface</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">bases</span><span class="p">:</span>
+            <span class="n">must_implement</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s">'abstract_methods'</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="n">class_methods</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s">'all_methods'</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">must_implement</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">class_methods</span><span class="p">:</span>
+                    <span class="n">err_str</span> <span class="o">=</span> <span class="s">"""Can't create abstract class {name}!
+                    {name} must implement abstract method {method} of class {base_class}!"""</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+                        <span class="n">base_class</span><span class="o">=</span><span class="n">base</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="nb">TypeError</span><span class="p">(</span><span class="n">err_str</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">metaclass</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">'abstract_methods'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Interface</span><span class="o">.</span><span class="n">_get_abstract_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">)</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">'all_methods'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Interface</span><span class="o">.</span><span class="n">_get_all_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">)</span>
+        <span class="n">cls</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">metaclass</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cls</span>
+
+    <span class="k">def</span> <span class="nf">_get_abstract_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">namespace</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s">'__isabstract__'</span><span class="p">,</span> <span class="bp">False</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">_get_all_methods</span><span class="p">(</span><span class="n">namespace</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">namespace</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">val</span><span class="p">)]</span>
+
+
+<span class="k">class</span> <span class="nc">NetworkInterface</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">Interface</span><span class="p">):</span>
+
+    <span class="nd">@abstractfunc</span>
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractfunc</span>
+    <span class="k">def</span> <span class="nf">transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+</code></pre></div></div>
+
+<p>And that should do it! Now, let’s see what happens when we try to subclass <code class="highlighter-rouge">NetworkInterface</code>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">RealNetwork</span><span class="p">(</span><span class="n">NetworkInterface</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+</code></pre></div></div>
+
+<p>Absolutely nothing! Just as we should expect. Since <code class="highlighter-rouge">RealNetwork</code> implements all the abstract methods of its parent(s), the class gets defined without a hitch. What’s probably more important to us however, is when our class <em>doesn’t</em> adhere to the contract of the base class.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">FakeNetwork</span><span class="p">(</span><span class="n">NetworkInterface</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">connect_to_server</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">transfer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+</code></pre></div></div>
+
+<p>Uh oh – <code class="highlighter-rouge">TypeError: Can't create abstract class FakeNetwork! FakeNetwork must implement abstract method connect of class NetworkInterface!</code>. In this case, the exception is a good thing. Since <code class="highlighter-rouge">FakeNetwork</code> doesn’t actually implement a method named <code class="highlighter-rouge">connect</code>, an exception is raised before we ever get the chance to create an instance of the class.</p>
+
+<p>Ultimately, this is a pretty brittle and toy-like implementation of abstract base classes, but hopefully it serves as a good example of how Python metaclasses can be uniquely used to solve problems. Metaclasses are definitely one of the more obscure language features of Python, and often misunderstood. To be fair, there aren’t a lot of situations where a problem is most easily or appropriately solvable by using custom metaclasses, but there are occasionally times, like with abstract classes, where the merit of using metaclasses presents itself. If you weren’t already familiar with metaclasses, however, hopefully you now have another tool at your disposal when tackling particularly tricky problems in Python.</p>
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="http://joebergeron.io">
+          <img class="rounded mr-2" src="https://avatars.githubusercontent.com/jophish" alt="Joseph Bergeron" width="64">
+          <span class="author-details">
+            <h6>Joseph Bergeron</h6>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

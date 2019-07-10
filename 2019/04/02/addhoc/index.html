@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Making React HOC functions the easy way with addhoc — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2019/04/02/addhoc/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2019/04/02/addhoc/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/headers/addhoc-cover.jpg">
+  
+
+  
+  <meta property="og:title" content="Making React HOC functions the easy way with addhoc — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="As defined in the React documentation, a higher-order component, or HOC, is a function that returns a React component that wraps a specified child component and often provides augmented functionality. Implementing HOCs can be hard when considering hoisting statics, managing ref forwarding, and handling display name. addhoc is a newly released open-source package that aims to handle these challenges for you.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--addhoc">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    Making React HOC functions the easy way with addhoc
+  </h1>
+
+  <p>Higher-order components, or HOCs, are a powerful way to add functionality or adjust behavior of arbitrary components.
+Indeed, libraries often provide HOCs to augment components with functionality or information.</p>
+
+<p>Take <a href="https://react-redux.js.org/">react-redux</a>, for example: to connect your component to your store, you use the <code class="highlighter-rouge">connect()</code> HOC. <code class="highlighter-rouge">connect()</code> wraps
+your UI component with a container component that handles passing state between the store and the UI component. Or
+<a href="https://reacttraining.com/react-router/">react-router</a>’s <code class="highlighter-rouge">withRouter</code> HOC, which injects the router functionality and information into your page components
+seamlessly.</p>
+
+<h2 id="sounds-cool-how-do-i-get-in-on-this">Sounds cool! How do I get in on this?</h2>
+
+<p>Glad you asked! The <a href="https://reactjs.org/docs/higher-order-components.html">React docs</a> explain how you too can build HOCs. But spend some time in that doc and you’ll soon
+realize that <a href="https://en.wikipedia.org/wiki/Here_be_dragons">here there be dragons</a>. When you build a HOC, you’re now on the hook to manage proper communication
+between parents and children of the wrapped component.</p>
+
+<p>You must:</p>
+
+<ul>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#convention-pass-unrelated-props-through-to-the-wrapped-component">pass through unrelated <code class="highlighter-rouge">props</code></a></li>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#convention-wrap-the-display-name-for-easy-debugging">wrap the display name for easy debugging</a></li>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#static-methods-must-be-copied-over">hoist non-React statics</a></li>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#refs-arent-passed-through">forward <code class="highlighter-rouge">refs</code></a></li>
+</ul>
+
+<p>Furthermore, these considerations are interrelated, so you need to make sure to handle them in the right order and
+hierarchy.</p>
+
+<h2 id="ew-this-sounds-ugly">Ew, this sounds ugly…</h2>
+
+<p>I agree.</p>
+
+<p>You see, recently, I was writing a HOC to provide <a href="https://reactjs.org/docs/context.html">React 16 Context API</a> functionality to components. I read
+those docs and hit each of those caveats. I spent a day or two carefully arranging code to handle them elegantly, wrote
+thorough tests, and patted myself on the back. Then, I moved onto my next ticket and had to do the same thing for a
+different context.</p>
+
+<p>Like any good software engineer, I am lazy. I hate doing the same thing twice. So, I took what I learned from the first
+HOC and extracted it into a new open source module.</p>
+
+<h2 id="avoid-building-hocs-ad-hoc-with-addhoc">Avoid building HOCs ad hoc with <code class="highlighter-rouge">addhoc</code></h2>
+
+<p>I’m excited to share <a href="https://github.com/godaddy/addhoc"><code class="highlighter-rouge">addhoc</code></a>, a new open-source module to vastly simplify building <em>correct</em> HOCs. It takes the pain
+out of the process so you can focus on the actual value-add you’re trying to provide.</p>
+
+<p><code class="highlighter-rouge">addhoc</code> creates HOC functions that automatically:</p>
+
+<ul>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#convention-pass-unrelated-props-through-to-the-wrapped-component">pass through unrelated <code class="highlighter-rouge">props</code></a></li>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#convention-wrap-the-display-name-for-easy-debugging">wrap the display name for easy debugging</a></li>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#static-methods-must-be-copied-over">hoist non-React statics</a></li>
+  <li><a href="https://reactjs.org/docs/higher-order-components.html#refs-arent-passed-through">forward <code class="highlighter-rouge">refs</code></a></li>
+</ul>
+
+<h2 id="nice-how-do-i-use-it">Nice, how do I use it?</h2>
+
+<p>It’s easy. Start by installing <code class="highlighter-rouge">addhoc</code> as a dependency:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># --save is default in the latest npm, and thus optional here</span>
+npm install <span class="o">[</span><span class="nt">--save</span><span class="o">]</span> addhoc
+</code></pre></div></div>
+
+<p>Then, import <code class="highlighter-rouge">addhoc</code> in your code and start building HOCs.</p>
+
+<p><code class="highlighter-rouge">addhoc</code> is a function that returns a HOC function. To construct your HOC, you pass a callback that acts as the render
+function of your top-level component.</p>
+
+<p>Your callback is provided a function parameter that returns the wrapped child that’s initially provided to the HOC. You
+can call that callback with an object of <code class="highlighter-rouge">props</code> to add to the wrapped component.</p>
+
+<p>You can also optionally pass in a string name to show when debugging the React component hierarchy.</p>
+
+<p>Let’s take a look at some examples to better illustrate how to use it:</p>
+
+<h3 id="example-1-adding-a-prop">Example 1: Adding a <code class="highlighter-rouge">prop</code></h3>
+
+<p>Sometimes, you want to add one or more <code class="highlighter-rouge">props</code> to wrapped components. With <code class="highlighter-rouge">addhoc</code>, you can make a HOC to do this in
+one line of code.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">addhoc</span> <span class="k">from</span> <span class="s1">'addhoc'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">MyComponent</span> <span class="k">from</span> <span class="s1">'./my-component'</span><span class="p">;</span>
+
+<span class="c1">// Make the HOC function</span>
+<span class="kd">const</span> <span class="nx">withFooProp</span> <span class="o">=</span> <span class="nx">addhoc</span><span class="p">(</span><span class="nx">getWrappedComponent</span> <span class="o">=&gt;</span> <span class="nx">getWrappedComponent</span><span class="p">({</span> <span class="na">foo</span><span class="p">:</span> <span class="kc">true</span> <span class="p">}),</span> <span class="s1">'WithFooProp'</span><span class="p">);</span>
+
+<span class="c1">// Wrap your component using the HOC</span>
+<span class="kd">const</span> <span class="nx">MyComponentWithFoo</span> <span class="o">=</span> <span class="nx">withFooProp</span><span class="p">(</span><span class="nx">MyComponent</span><span class="p">);</span>
+
+<span class="c1">// Rendering a MyComponentWithFoo will create a MyComponent with prop foo = true</span>
+<span class="c1">// The component hierarchy will look like</span>
+<span class="c1">//   WithFooProp(MyComponent)</span>
+<span class="c1">//   └── MyComponent</span>
+</code></pre></div></div>
+
+<h3 id="example-2-wrapping-in-another-component">Example 2: Wrapping in another component</h3>
+
+<p>Another common HOC scenario is wrapping one component in another. <code class="highlighter-rouge">addhoc</code> makes this simple as well.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">addhoc</span> <span class="k">from</span> <span class="s1">'addhoc'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">MyComponent</span> <span class="k">from</span> <span class="s1">'./my-component'</span><span class="p">;</span>
+
+<span class="c1">// Make the HOC function</span>
+<span class="kd">const</span> <span class="nx">withDiv</span> <span class="o">=</span> <span class="nx">addhoc</span><span class="p">(</span><span class="nx">getWrappedComponent</span> <span class="o">=&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="si">{</span> <span class="nx">getWrappedComponent</span><span class="p">()</span> <span class="si">}</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;,</span> <span class="s1">'WithDiv'</span><span class="p">);</span>
+
+<span class="c1">// Wrap your component using the HOC</span>
+<span class="kd">const</span> <span class="nx">MyComponentWithDiv</span> <span class="o">=</span> <span class="nx">withDiv</span><span class="p">(</span><span class="nx">MyComponent</span><span class="p">);</span>
+
+<span class="c1">// Rendering a MyComponentWithDiv will render a div that wraps a MyComponent</span>
+</code></pre></div></div>
+
+<h3 id="example-3-react-16-context-consumer">Example 3: React 16 Context consumer</h3>
+
+<p>With the <a href="https://reactjs.org/docs/context.html">React 16 Context API</a>, consuming a context now requires wrapping components with a Context Consumer node. This
+is a great use-case for HOCs as they free consumers of your context from having to deal with the Context directly.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">addhoc</span> <span class="k">from</span> <span class="s1">'addhoc'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">MyComponent</span> <span class="k">from</span> <span class="s1">'./my-component'</span><span class="p">;</span>
+
+<span class="c1">// Create the Context</span>
+<span class="kd">const</span> <span class="nx">MyContext</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createContext</span><span class="p">(</span><span class="s1">'DefaultValue'</span><span class="p">);</span>
+
+<span class="c1">// Make the HOC function</span>
+<span class="kd">const</span> <span class="nx">withMyContext</span> <span class="o">=</span> <span class="nx">addhoc</span><span class="p">(</span><span class="nx">getWrappedComponent</span> <span class="o">=&gt;</span>
+  <span class="p">&lt;</span><span class="nc">MyContext</span><span class="p">.</span><span class="nc">Consumer</span><span class="p">&gt;</span>
+    <span class="si">{</span> <span class="nx">value</span> <span class="o">=&gt;</span> <span class="nx">getWrappedComponent</span><span class="p">({</span> <span class="nx">value</span> <span class="p">})</span> <span class="si">}</span>
+  <span class="p">&lt;/</span><span class="nc">MyContext</span><span class="p">.</span><span class="nc">Consumer</span><span class="p">&gt;,</span> <span class="s1">'WithMyContext'</span><span class="p">);</span>
+
+<span class="c1">// Wrap your component using the HOC</span>
+<span class="kd">const</span> <span class="nx">MyComponentWithMyContext</span> <span class="o">=</span> <span class="nx">withMyContext</span><span class="p">(</span><span class="nx">MyComponent</span><span class="p">);</span>
+
+<span class="c1">// Now, the MyComponentWithMyContext automatically gets a prop called `value` that gets the context</span>
+<span class="c1">// value passed in from the context.</span>
+<span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nc">MyContext</span><span class="p">.</span><span class="nc">Provider</span> <span class="na">value=</span><span class="s1">'ProvidedValue'</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nc">MyComponentWithMyContext</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;/</span><span class="nc">MyContext</span><span class="p">.</span><span class="nc">Provider</span><span class="p">&gt;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="example-4-passing-through-configuration">Example 4: Passing through configuration</h3>
+
+<p>Sometimes, you want to set some values as part of assembling the HOC and have those available in your render function.
+You can pass arbitrary parameters after the <code class="highlighter-rouge">name</code> param to <code class="highlighter-rouge">addhoc</code> and they’ll be passed through as additional
+parameters to your render function:</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">addhoc</span> <span class="k">from</span> <span class="s1">'addhoc'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">MyComponent</span> <span class="k">from</span> <span class="s1">'./my-component'</span><span class="p">;</span>
+
+<span class="c1">// Make the HOC function</span>
+<span class="kd">const</span> <span class="nx">withFooProp</span> <span class="o">=</span> <span class="nx">addhoc</span><span class="p">((</span><span class="nx">getWrappedComponent</span><span class="p">,</span> <span class="nx">extra</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">getWrappedComponent</span><span class="p">({</span> <span class="na">foo</span><span class="p">:</span> <span class="nx">extra</span> <span class="p">}),</span>
+  <span class="s1">'WithFoo'</span><span class="p">,</span> <span class="s1">'EXTRA'</span><span class="p">);</span>
+
+<span class="c1">// Wrap your component using the HOC</span>
+<span class="kd">const</span> <span class="nx">MyComponentWithFoo</span> <span class="o">=</span> <span class="nx">withFooProp</span><span class="p">(</span><span class="nx">MyComponent</span><span class="p">);</span>
+
+<span class="c1">// Rendering a MyComponentWithFoo will get a `foo` prop with value `EXTRA`</span>
+</code></pre></div></div>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>With <code class="highlighter-rouge">addhoc</code>, making higher-order components is easy to do right. It manages the ugly parts for you, allowing you to do
+what you do best.</p>
+
+<p>Give <a href="https://github.com/godaddy/addhoc"><code class="highlighter-rouge">addhoc</code></a> a try the next time you need to build a HOC and let me know how it went. You can find me on Twitter
+<a href="https://twitter.com/decompiled">@decompiled</a> or in the <a href="https://godaddy-oss-slack.herokuapp.com/">GoDaddy OpenSource Slack channel</a>. Have another use case? Contributions are always
+welcome.</p>
+
+<blockquote>
+  <p>Cover photo by <a href="https://unsplash.com/photos/JNR5_2Os5dE?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText">Reto Niederhauser</a> on <a href="https://unsplash.com/collections/4297606/hoc/65f7efa3c78a1bef80e683fce405e386?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText">Unsplash</a></p>
+</blockquote>
+
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://github.com/decompil3d">
+          <img class="rounded mr-2" src="https://avatars.githubusercontent.com/decompil3d" alt="Jonathan Keslin" width="64">
+          <span class="author-details">
+            <h6>Jonathan Keslin</h6>
+            
+            <h7>Director of Engineering, UXCore</h7>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

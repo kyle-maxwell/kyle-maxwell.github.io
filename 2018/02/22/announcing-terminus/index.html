@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Health Checks and Graceful Shutdown for Node.js Applications — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="https://nemethgergely.com/nodejs-healthcheck-graceful-shutdown">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2018/02/22/announcing-terminus/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/headers/graceful-shutdown.jpg">
+  
+
+  
+  <meta property="og:title" content="Health Checks and Graceful Shutdown for Node.js Applications — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="Your application is serving requests constantly for your users. You and your team want to ship features and fixes as soon as they are ready, so you do continuous delivery. But what happens to your users who used your product at the time of the deployment? Chances are, the requests they have in progress are going to fail. This post helps you fix that.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--announcing-terminus">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    Health Checks and Graceful Shutdown for Node.js Applications
+  </h1>
+
+  <p><span class="text-drop-cap">Y</span>our application is serving requests constantly for your users. You and your team want to ship features and fixes as soon as they are ready, so you do continuous delivery. <strong>But what happens to your users who used your product at the time of the deployment? Chances are, the requests they have in progress are going to fail.</strong> This post helps you fix that.</p>
+
+<h3 id="graceful-shutdown-for-nodejs">Graceful shutdown for Node.js</h3>
+
+<p>When you deploy a new version of your application, the old must be replaced. The process manager you are using <em>(no matter if it is Heroku, Kubernetes, supervisor or anything else)</em> will first send a <code class="highlighter-rouge">SIGTERM</code> signal to the application to let it know, that it will be killed. Once it gets this signal, it should <strong>stop accepting new requests, finish all the ongoing requests, and clean up the resources it used</strong>. Resources may include database connections or file locks.</p>
+
+<p>For your Node.js process you may add something like this:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">process</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'SIGTERM'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s1">'shutdown started'</span><span class="p">)</span>
+  <span class="nx">server</span><span class="p">.</span><span class="nx">stop</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">closeMysqlConnection</span><span class="p">())</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s1">'process is stopping'</span><span class="p">)</span>
+    <span class="p">})</span>
+<span class="p">})</span>
+</code></pre></div></div>
+
+<h3 id="health-checks-for-nodejs-applications">Health checks for Node.js applications</h3>
+
+<p>Health checks of your applications are called by the load balancer of your application to let it know if the application instance is healthy, and can server traffic. If you are using Kubernetes, Kubernetes has two distinct health checks:</p>
+
+<ul>
+  <li><strong>liveness</strong> is used by the kubelet to know when to restart a container,</li>
+  <li><strong>readiness</strong> is used by the kubelet to know when a container is ready to start accepting traffic - when a pod is not ready, it is removed from the Service load balancers.</li>
+</ul>
+
+<p>On how to set up health checks for Kubernetes, check out the official <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/">Configure Liveness and Readiness Probes</a> docs.</p>
+
+<div class="card mb-3 shadow border-0">
+  <div class="card-body p-0">
+    <p class="card-text p-3 mb-0 bg-secondary-base text-light">
+      At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+    </p>
+    <div class="card-footer text-muted">
+      <a class="btn btn-primary shadowed" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&amp;utm_source=godaddy-oss" title="Work at GoDaddy">
+        Join us!
+      </a>
+    </div>
+  </div>
+</div>
+
+<h3 id="enter-terminus">Enter <code class="highlighter-rouge">terminus</code></h3>
+
+<p><a href="https://github.com/godaddy/terminus">terminus</a> is an open-source project, which adds health checks and graceful shutdown to your applications - to save you from the boilerplate code you would add otherwise. You only have to provide the cleanup logic for graceful shutdowns, and the health check logic for health checks, all the rest is handled by <a href="https://github.com/godaddy/terminus">terminus</a>.</p>
+
+<p>Let’s take a look at an example:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">const</span> <span class="nx">http</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'http'</span><span class="p">)</span>
+<span class="kd">const</span> <span class="nx">terminus</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'@godaddy/terminus'</span><span class="p">)</span>
+
+<span class="kd">const</span> <span class="nx">server</span> <span class="o">=</span> <span class="nx">http</span><span class="p">.</span><span class="nx">createServer</span><span class="p">((</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">response</span><span class="p">.</span><span class="nx">end</span><span class="p">(</span><span class="s1">'&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello, World!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;'</span><span class="p">)</span>
+<span class="p">})</span>
+
+<span class="kd">const</span> <span class="nx">PORT</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">PORT</span> <span class="o">||</span> <span class="mi">3000</span>
+
+<span class="kd">function</span> <span class="nx">onSigterm</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'server is starting cleanup'</span><span class="p">)</span>
+  <span class="k">return</span> <span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span>
+    <span class="c1">// your clean logic, like closing database connections</span>
+  <span class="p">])</span>
+<span class="p">}</span>
+
+<span class="nx">terminus</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span> <span class="p">{</span>
+  <span class="c1">// healtcheck options</span>
+  <span class="na">healthChecks</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s1">'/_health/liveness'</span><span class="p">:</span> <span class="nx">livenessCheck</span><span class="p">,</span>
+    <span class="s1">'/_health/readiness'</span><span class="p">:</span> <span class="nx">readinessCheck</span>
+  <span class="p">},</span>
+
+  <span class="c1">// cleanup options</span>
+  <span class="na">timeout</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+  <span class="nx">onSigterm</span><span class="p">,</span>
+
+  <span class="nx">logger</span>
+<span class="p">})</span>
+
+<span class="nx">server</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="nx">PORT</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The example above decorates your HTTP server with two endpoints, <code class="highlighter-rouge">/_health/liveness</code> and <code class="highlighter-rouge">/_health/readiness</code> <em>(sure, you can use other paths here)</em>. They both are given a function returning a Promise - if the Promise resolves, it will return with a <code class="highlighter-rouge">200</code>, if it rejects, it will return with a <code class="highlighter-rouge">500</code>.</p>
+
+<p>The <code class="highlighter-rouge">onSigterm</code> function will be called, once all the ongoing requests are served. You can also provide the <code class="highlighter-rouge">timeout</code> option - once the timeout elapses, the server will be terminated, no matter if there are still ongoing requests.</p>
+
+<hr />
+
+<p>I hope with the help of <code class="highlighter-rouge">terminus</code> you’ll build more reliable services. If you miss anything / would like to contribute, please visit the project’s Github page: <a href="https://github.com/godaddy/terminus">https://github.com/godaddy/terminus</a>.</p>
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://twitter.com/nthgergo">
+          <img class="rounded mr-2" src="https://avatars2.githubusercontent.com/u/2174968?s=460" alt="Gergely Nemeth" width="64">
+          <span class="author-details">
+            <h6>Gergely Nemeth</h6>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

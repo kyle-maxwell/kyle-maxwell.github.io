@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Isomorphic Asset System for React and React-Native — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2018/04/04/isomorphic-asset-system-for-react-and-react-native/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2018/04/04/isomorphic-asset-system-for-react-and-react-native/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/headers/isomorphic-asset-system.png">
+  
+
+  
+  <meta property="og:title" content="Isomorphic Asset System for React and React-Native — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="Introducing Asset System a cross platform asset rendering system for React and React-Native using SVG's.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--isomorphic-asset-system-for-react-and-react-native">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+<div class="cover-image" style="background-image: url(/engineering/assets/images/headers/isomorphic-asset-system.png);"></div>
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    Isomorphic Asset System for React and React-Native
+  </h1>
+
+  <p>Proudly introducing our latest Open Source project, <a href="http://github.com/godaddy/asset-system"><strong>Asset System</strong></a>, which is built upon our previously released <a href="http://github.com/godaddy/svgs">svgs</a> library.</p>
+
+<ul>
+  <li>It provides an easy way to share assets between React and React-Native.</li>
+  <li>Allows you to modify the assets on the fly, rotate, re-color etc so you can rebrand and re-use assets without the need for duplication.</li>
+  <li>Assets scale without degradation of quality as they are a vector.</li>
+  <li>High focus on performance, bundles multiple assets in a single bundle to reduce HTTP requests, comes with caching and other request optimization techniques.</li>
+  <li>UX/DX first, easy to use, intuitive API’s. Optimized for a great UX by preventing unwanted re-layout</li>
+  <li>Accessible, ARIA roles and properties are used where possible and <code class="highlighter-rouge">accessiblityLabel</code> on React-Native.</li>
+</ul>
+
+<p>Asset System consists of the following packages:</p>
+
+<ul>
+  <li><a href="#asset-provider">asset-provider</a></li>
+  <li><a href="#asset-parser">asset-parser</a></li>
+  <li><a href="#asset-bundle">asset-bundle</a></li>
+  <li><a href="#asset-webpack">asset-webpack</a></li>
+  <li><a href="#asset-list">asset-list</a></li>
+</ul>
+
+<p>All these projects are available on <a href="http://github.com/godaddy/asset-system">Github</a>. Lets dive a bit deeper into the functionality of each project.</p>
+
+<h2 id="asset-provider">asset-provider</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>npm install <span class="nt">--save</span> asset-provider
+
+<span class="c"># Only needed when you use this on React-Native</span>
+npm install <span class="nt">--save</span> react-native-svg <span class="o">&amp;&amp;</span> react-native link react-native-svg
+</code></pre></div></div>
+
+<p>This is the component layer of the system, it works with React <strong>and</strong> React-Native. What this means is that you can share the same assets, and code on both platforms without having to rewrite a single line of code. This is a huge win in terms of efficiency. The <code class="highlighter-rouge">asset-provider</code> module exposes 2 different components:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">Provider</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Asset</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'asset-provider'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h3 id="provider">Provider</h3>
+
+<p>This is the root component that should be wrapping your application or component that wants to use the asset system. It fetches the specified bundle and ensures that all nested <code class="highlighter-rouge">&lt;Asset /&gt;</code> components will have access to the assets within the downloaded bundle. You can wrap your app with a single <code class="highlighter-rouge">&lt;Provider&gt;</code>:</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">Provider</span> <span class="k">from</span> <span class="s1">'asset-provider'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">App</span> <span class="k">from</span> <span class="s1">'./app'</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">Bootstrap</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Provider</span> <span class="na">uri=</span><span class="s1">'https://cdn.example.com/bundle.svgs'</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">App</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nc">Provider</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>If you are building standalone components you can also wrap those in a <code class="highlighter-rouge">&lt;Provider&gt;</code> component so they can be used separately from your application if needed. The component is smart enough to detect duplicate requests and will re-use the previously requested bundle so only a single HTTP request is made. So it doesn’t matter if you have 1 or 100 provider statements, it will only make a single HTTP request.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">Provider</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Asset</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'asset-provider'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+
+<span class="kd">function</span> <span class="nx">Icon</span><span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Provider</span> <span class="na">uri=</span><span class="s1">'https://cdn.example.com/icons.svgs'</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Asset</span> <span class="na">name=</span><span class="si">{</span> <span class="nx">props</span><span class="p">.</span><span class="nx">name</span> <span class="si">}</span> <span class="na">title=</span><span class="si">{</span> <span class="nx">props</span><span class="p">.</span><span class="nx">name</span> <span class="si">}</span> <span class="na">width=</span><span class="si">{</span> <span class="mi">10</span> <span class="si">}</span> <span class="na">height=</span><span class="si">{</span> <span class="mi">10</span> <span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nc">Provider</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">OpenSource</span><span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">className=</span><span class="s1">'social'</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href=</span><span class="s2">"https://twitter.com/GodaddyOSS"</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">Icon</span> <span class="na">name=</span><span class="s1">'twitter'</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href=</span><span class="s2">"http://github.com/godaddy"</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">Icon</span> <span class="na">name=</span><span class="s1">'github'</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="asset">Asset</h3>
+
+<p>This is the component that will render the actually requested asset.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">Asset</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'asset-provider'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">Example</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Asset</span> <span class="na">name=</span><span class="s1">'logo'</span> <span class="na">title=</span><span class="s1">'GoDaddy Logo'</span> <span class="na">height=</span><span class="si">{</span><span class="mi">100</span><span class="si">}</span> <span class="na">width=</span><span class="si">{</span><span class="mi">250</span><span class="si">}</span> <span class="p">/&gt;</span>
+  <span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>It asks the wrapping <code class="highlighter-rouge">&lt;Provider&gt;</code> through <code class="highlighter-rouge">React.context</code> for the asset. If the asset was not downloaded, the <code class="highlighter-rouge">&lt;Provider&gt;</code> will start downloading the bundle and passes it to the Asset once it’s retrieved.</li>
+  <li>If the bundle is still downloading we will display an empty, transparent, SVG element with the same dimensions. So the rest of the application can still render as intended. The same width/height are used to prevent the layout
+from being re-calculated so once the asset is downloaded it would only need to repaint the area where the asset was inserted.</li>
+  <li>The bundle is loaded, optional transformations are applied to the asset.</li>
+  <li>The asset renders.</li>
+</ul>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">Asset</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'asset-provider'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">Spinner</span> <span class="k">from</span> <span class="s1">'./spinner'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">Example</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Asset</span> <span class="na">name=</span><span class="s1">'example'</span> <span class="na">height=</span><span class="si">{</span><span class="mi">300</span><span class="si">}</span> <span class="na">width=</span><span class="si">{</span><span class="mi">300</span><span class="si">}</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Spinner</span> <span class="na">width=</span><span class="si">{</span><span class="mi">300</span><span class="si">}</span> <span class="na">height=</span><span class="si">{</span><span class="mi">300</span><span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nc">Asset</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><a href="https://github.com/godaddy/asset-system/tree/master/packages/provider">View project on Github</a></p>
+
+<h2 id="asset-parser">asset-parser</h2>
+
+<p>The asset-parser contains all the logic to encode and decode the created bundle as well as logic to transform the decoded structure back into proper SVG elements. It’s not something you as a user would be installing yourself but we felt the need to explain what it does as this library also powers the transformation process.</p>
+
+<h3 id="encoding">encoding</h3>
+
+<p>At the time of this writing, asset-parser is using <code class="highlighter-rouge">JSON</code> to encode and decode the structure that the <code class="highlighter-rouge">asset-bundle</code> project generated.</p>
+
+<h3 id="transformation">transformation</h3>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">Parser</span> <span class="k">from</span> <span class="s1">'asset-parser'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">parser</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Parser</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>This is one of the strengths of this library, the ability transform/modify assets on the fly. You can recolor, rotate, skew and even delete parts of the SVG if you wish. This allows you to reduce duplicate assets. For example, instead of a left and right arrow in black and grey, you can have a single arrow. And just rotate it, and recolor if needed.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">Asset</span><span class="p">,</span> <span class="nx">parser</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'asset-provider'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+
+<span class="cm">/**
+ * Assign a new parser for the `color` prop which will re-color all Path
+ * elements in the asset.
+ *
+ * @param {Object} attr The attributes that will be added to the SVG element
+ * @param {Object} props The properties that we received from &lt;Asset /&gt;
+ * @param {React.Element} child The actual React Element that will be rendered.
+ */</span>
+<span class="nx">parser</span><span class="p">.</span><span class="nx">modify</span><span class="p">(</span><span class="s1">'color'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">attr</span><span class="p">,</span> <span class="nx">props</span><span class="p">,</span> <span class="nx">child</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">child</span><span class="p">.</span><span class="nx">type</span> <span class="o">!==</span> <span class="s1">'Path'</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="nx">attr</span><span class="p">.</span><span class="nx">fill</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">attr</span><span class="p">.</span><span class="nx">fill</span> <span class="o">=</span> <span class="nx">props</span><span class="p">.</span><span class="nx">color</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">function</span> <span class="nx">Example</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Asset</span> <span class="na">name=</span><span class="s1">'arrow'</span> <span class="na">color=</span><span class="s1">'red'</span> <span class="na">width=</span><span class="si">{</span> <span class="mi">10</span> <span class="si">}</span> <span class="na">height=</span><span class="si">{</span> <span class="mi">10</span> <span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Asset</span> <span class="na">name=</span><span class="s1">'arrow'</span> <span class="na">width=</span><span class="si">{</span> <span class="mi">10</span> <span class="si">}</span> <span class="na">height=</span><span class="si">{</span> <span class="mi">10</span> <span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In the example above we access the <code class="highlighter-rouge">parser</code> instance that the <code class="highlighter-rouge">asset-provider</code> library exposes and assign a new modifier for the keyword <code class="highlighter-rouge">color</code>, this means that when an <code class="highlighter-rouge">&lt;Asset /&gt;</code> is rendered with the <code class="highlighter-rouge">color</code> property, that this modifier will be triggered during the transformation process. The modifier will have access to all the custom properties that are added on the <code class="highlighter-rouge">&lt;Asset /&gt;</code> so we use it to pass in the color and use it to override the <code class="highlighter-rouge">fill</code> attribute of the SVG attribute.</p>
+
+<p>It’s worth noting that the transformations are only applied to the <code class="highlighter-rouge">&lt;Asset /&gt;</code> that specified the <code class="highlighter-rouge">color</code> property all other assets that reference the same asset will remain unchanged. So in our example code above we will have a red arrow and normal default colored arrow.</p>
+
+<p><a href="https://github.com/godaddy/asset-system/tree/master/packages/parser">View project on Github</a></p>
+
+<h2 id="asset-bundle">asset-bundle</h2>
+
+<p>This project allows you to bundle multiple SVG assets into a single <code class="highlighter-rouge">asset-provider</code> compatible, optimized bundle. Ideally you want to have your assets out of your JavaScript bundle as assets change less over time. This means you’re not invalidating the cached asset bundle when you release/publish a new JavaScript application bundle. It comes at the cost of an extra HTTP request for fetching the bundle.</p>
+
+<p>The <code class="highlighter-rouge">asset-bundle</code> help by:</p>
+
+<ul>
+  <li>Optimizing each bundled SVG using <code class="highlighter-rouge">svgo</code> to make it as small as possible.</li>
+  <li>Minimize the impact on your user’s mobile device CPU and battery life so we transform each SVG in an easy to parse format.</li>
+  <li>Reducing HTTP requests by bundling multiple assets in to a single format.</li>
+</ul>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">Bundle</span> <span class="k">from</span> <span class="s1">'asset-bundle'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">path</span> <span class="k">from</span> <span class="s1">'path'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">bundle</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Bundle</span><span class="p">([</span>
+  <span class="c1">//</span>
+  <span class="c1">// Array of all the svgs we want to include in the bundle.</span>
+  <span class="c1">//</span>
+  <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'folder'</span><span class="p">,</span> <span class="s1">'filename.svg'</span><span class="p">),</span>
+  <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'folder'</span><span class="p">,</span> <span class="s1">'another.svg'</span><span class="p">),</span>
+  <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'folder'</span><span class="p">,</span> <span class="s1">'more.svg'</span><span class="p">)</span>
+<span class="p">]);</span>
+
+<span class="nx">bundle</span><span class="p">.</span><span class="nx">run</span><span class="p">((</span><span class="nx">err</span><span class="p">,</span> <span class="nx">output</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="k">throw</span> <span class="nx">err</span><span class="p">;</span>
+
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">output</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<p>For the best cross-platform compatibility, we recommended that the resulting asset bundle is served over HTTPS so you do not need to configure <a href="https://ste.vn/2015/06/10/configuring-app-transport-security-ios-9-osx-10-11/">App Transport Security (ATS)</a> on React-Native for iOS. In addition to that, it’s recommended that this file is served with <code class="highlighter-rouge">text/plain</code> as <code class="highlighter-rouge">Content-Type</code>. This <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Simple_requests">prevents a CORS preflight</a> request from being made and drastically improves performance.</p>
+
+<p><a href="https://github.com/godaddy/asset-system/tree/master/packages/bundle">View project on Github</a></p>
+
+<h2 id="asset-webpack">asset-webpack</h2>
+
+<p>We have also wrapped the <code class="highlighter-rouge">asset-bundle</code> project in a WebPack plugin. This allows you to easily generate an <code class="highlighter-rouge">asset-provider</code> compatible bundle using your existing build system. Instead of manually specifying which svgs need to be included, it will read out your <code class="highlighter-rouge">require</code> statements. In addition to including the assets in the SVG bundle it will also rewrite the contents of the original required file to output the name of asset:</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">Provider</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Asset</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'asset-provider'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">upload</span> <span class="k">from</span> <span class="s1">'./upload.svg'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">file</span> <span class="k">from</span> <span class="s1">'./file.svg'</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="kd">class</span> <span class="nx">Example</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nc">Provider</span> <span class="na">uri=</span><span class="s1">'http://url.com/bundle.svgs'</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+          <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Upload <span class="p">&lt;</span><span class="nc">Asset</span> <span class="na">name=</span><span class="si">{</span> <span class="nx">file</span> <span class="si">}</span> <span class="p">/&gt;&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+
+          <span class="p">&lt;</span><span class="nt">label</span><span class="p">&gt;</span>
+            Upload file: <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type=</span><span class="s1">'file'</span> <span class="na">name=</span><span class="s1">'file'</span> <span class="p">/&gt;</span>
+          <span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+
+          <span class="p">&lt;</span><span class="nt">button</span><span class="p">&gt;</span> Upload <span class="p">&lt;</span><span class="nc">Asset</span> <span class="na">name=</span><span class="si">{</span> <span class="nx">upload</span> <span class="si">}</span> <span class="p">/&gt;&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nc">Provider</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>To add <code class="highlighter-rouge">asset-webpack</code> to your <code class="highlighter-rouge">webpack.config.js</code> we require you to also specify the <code class="highlighter-rouge">file-loader</code> and set for the <code class="highlighter-rouge">.svg</code> extension:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">module</span><span class="p">:</span> <span class="p">{</span>
+  <span class="nl">loaders</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span> <span class="na">test</span><span class="p">:</span> <span class="sr">/</span><span class="se">\.</span><span class="sr">svg$/</span><span class="p">,</span> <span class="na">loaders</span><span class="p">:</span> <span class="p">[</span> <span class="s1">'file-loader'</span> <span class="p">]</span> <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Once you have set that up, you can add <code class="highlighter-rouge">asset-webpack</code> as a plugin to your WebPack configuration:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">AssetSystem</span> <span class="k">from</span> <span class="s1">'asset-webpack'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>And add it to the plugin section of your WebPack configuration:</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span>
+  <span class="p">...,</span>
+  <span class="nx">plugins</span><span class="p">:</span> <span class="p">[</span>
+    <span class="k">new</span> <span class="nx">AssetSystem</span><span class="p">(</span><span class="s1">'bundle-name-here.svgs'</span><span class="p">,</span> <span class="p">{</span> <span class="cm">/* opts */</span> <span class="p">})</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The first argument is the name of the resulting bundle. It will be stored in the <code class="highlighter-rouge">dist</code> folder that you previously configured in your WebPack configuration.</p>
+
+<p><a href="https://github.com/godaddy/asset-system/tree/master/packages/webpack">View project on Github</a></p>
+
+<h2 id="asset-list">asset-list</h2>
+
+<p>Last but not least, <code class="highlighter-rouge">asset-list</code> will automatically generate documentation about the assets that are included in the bundle. It can be hooked to the <code class="highlighter-rouge">asset-bundle</code> as well as the <code class="highlighter-rouge">asset-webpack</code> projects. This allows you to quickly review what assets are included in the bundle, their names, and even what their dimensions are.</p>
+
+<h3 id="bundle">Bundle</h3>
+
+<p>When using <code class="highlighter-rouge">asset-bundle</code> you use the <code class="highlighter-rouge">plugin</code> method to register the <code class="highlighter-rouge">asset-list</code> plugin. It’s worth noting that the documentation generation is a <strong>synchronous</strong> process and will store the generated documentation in the same location as the provided output directory with the same name as your bundle, but with a <code class="highlighter-rouge">.md</code> extension.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">AssetSystem</span> <span class="k">from</span> <span class="s1">'asset-bundle'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">List</span> <span class="k">from</span> <span class="s1">'asset-list'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">path</span> <span class="k">from</span> <span class="s1">'path'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">fs</span> <span class="k">from</span> <span class="s1">'fs'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">output</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'bundle.svg'</span><span class="p">);</span>
+<span class="kd">const</span> <span class="nx">bundle</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">AssetSystem</span><span class="p">([</span>
+  <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'test'</span><span class="p">,</span> <span class="s1">'fixtures'</span><span class="p">,</span> <span class="s1">'godaddy.svg'</span><span class="p">)</span>
+<span class="p">]);</span>
+
+<span class="c1">//</span>
+<span class="c1">// Add the plugin to the bundle process using the `.plugin` module.</span>
+<span class="c1">//</span>
+<span class="nx">bundle</span><span class="p">.</span><span class="nx">plugin</span><span class="p">(</span><span class="nx">List</span><span class="p">,</span> <span class="p">{</span> <span class="na">file</span><span class="p">:</span> <span class="nx">output</span> <span class="p">});</span>
+
+<span class="c1">//</span>
+<span class="c1">// Once the bundle is done, it will generate all the things.</span>
+<span class="c1">//</span>
+<span class="nx">bundle</span><span class="p">.</span><span class="nx">run</span><span class="p">((</span><span class="nx">err</span><span class="p">,</span> <span class="nx">str</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">fs</span><span class="p">.</span><span class="nx">writeFileSync</span><span class="p">(</span><span class="nx">output</span><span class="p">,</span> <span class="nx">str</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div></div>
+
+<h3 id="webpack">WebPack</h3>
+
+<p>And for <code class="highlighter-rouge">asset-webpack</code> we can use the <code class="highlighter-rouge">plugins</code> option to supply a list of plugins.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">AssetSystem</span> <span class="k">from</span> <span class="s1">'asset-webpack'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">List</span> <span class="k">from</span> <span class="s1">'asset-list'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">path</span> <span class="k">from</span> <span class="s1">'path'</span><span class="p">;</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'index.js'</span><span class="p">),</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">path</span><span class="p">:</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'dist'</span><span class="p">),</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s1">'output.js'</span>
+  <span class="p">},</span>
+
+  <span class="na">module</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">loaders</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span> <span class="na">test</span><span class="p">:</span> <span class="sr">/</span><span class="se">\.</span><span class="sr">svg$/</span><span class="p">,</span> <span class="na">loaders</span><span class="p">:</span> <span class="p">[</span><span class="s1">'file-loader'</span><span class="p">]</span> <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+    <span class="k">new</span> <span class="nx">AssetSystem</span><span class="p">(</span><span class="s1">'bundle.svgs'</span><span class="p">,</span> <span class="p">{</span>
+      <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">[</span><span class="nx">List</span><span class="p">,</span> <span class="p">{</span> <span class="cm">/* asset-list options here */</span> <span class="p">}]</span>
+      <span class="p">]</span>
+    <span class="p">})</span>
+  <span class="p">]</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p><a href="https://github.com/godaddy/asset-system/tree/master/packages/list">View project on Github</a></p>
+
+<p>This was a quick review of what <strong>Asset System</strong> is and what it could do for your projects. In the following weeks we will dive a bit deeper in the <code class="highlighter-rouge">asset-provider</code> and <code class="highlighter-rouge">asset-bundle</code> projects to highlight some it’s use-cases, patterns and best practices.</p>
+
+<p>You can find all the projects and their code on <a href="http://github.com/godaddy/asset-system">Github</a>.</p>
+
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://github.com/3rd-Eden">
+          <img class="rounded mr-2" src="https://avatars2.githubusercontent.com/u/28071?s=460&v=4" alt="Arnout Kazemier" width="64">
+          <span class="author-details">
+            <h6>Arnout Kazemier</h6>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

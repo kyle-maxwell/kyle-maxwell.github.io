@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Implementing a custom Redis and in-memory bloom filter — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2018/09/11/redis-ruby-bloom-filter/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2018/09/11/redis-ruby-bloom-filter/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/bloom_filter.png">
+  
+
+  
+  <meta property="og:title" content="Implementing a custom Redis and in-memory bloom filter — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="In our email marketing products, we changed our bloom filter implementation by using a custom Redis and an in-memory bloom filter written in Ruby. We will go through iterations at solving a real problem and writing a custom bloom filter from scratch.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--redis-ruby-bloom-filter">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+<div class="cover-image" style="background-image: url(/engineering/assets/images/bloom_filter.png);"></div>
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    Implementing a custom Redis and in-memory bloom filter
+  </h1>
+
+  <p>In our email marketing and delivery products (<a href="https://www.godaddy.com/online-marketing/email-marketing">GoDaddy Email Marketing</a> and <a href="https://madmimi.com">Mad Mimi</a>) we deal with lots of data and work with some interesting data structures like bloom filters. We made an optimization that involved replacing an old bloom filter built in-memory and stored on Amazon S3 with a combination of a Redis bloom filter and an in-memory bloom filter. In this blog post we’ll go through the reasoning for this change as well as the details of the bloom filter implementation we landed on. Let’s first start with a brief introduction to bloom filters.</p>
+
+<h3 id="what-is-a-bloom-filter">What is a bloom filter?</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/Bloom_filter">A Bloom filter</a> is a space-efficient probabilistic data structure, designed to test whether an element is a member of a set. Because of its probabilistic nature, it can guess if an element is in a set with a certain precision or tell for sure if an element is not in a set. That is an important detail to design around as we’ll see later. If you’re curious about the math involved, check out this <a href="https://www.igvita.com/2008/12/27/scalable-datasets-bloom-filters-in-ruby/">blog post</a> for more details.</p>
+
+<h3 id="what-is-the-real-problem-we-are-solving">What is the real problem we are solving?</h3>
+
+<p>In our email delivery products, each plan places limit on the number of unique contacts our customers can send emails to in a billing cycle. An interesting abuse scenario happens when a customer uploads a list of email addresses, sends a campaign to that list, deletes the list, and then imports another list with different email addresses and sends another campaign. We call this scenario “deleting and replacing” and to prevent it we need to keep a history of contacts that have received emails in a billing cycle.</p>
+
+<h3 id="the-naive-solution">The naive solution</h3>
+
+<p>The naive solution would be to check against the history of delivered emails in a billing cycle. While that might work for smaller data sets, it causes a performance problem when dealing with billions of contacts. That is where the opportunity for using the bloom filter data structure emerges.</p>
+
+<h3 id="initial-bloom-filter-implementation">Initial bloom filter implementation</h3>
+
+<p>Initially, we used the C-implementation from <a href="https://github.com/igrigorik/bloomfilter-rb">bloomfilter-rb</a> by building a bloom filter in-memory and uploading it to Amazon S3.</p>
+
+<p>There were issues with this approach, the two most important ones being:</p>
+
+<ul>
+  <li>concurrency: sending multiple campaigns at the same time overrides the filter</li>
+  <li>slow updates / restricted to bulk updates: fetching files from S3 is not fast and updating the filter for one-off sends is expensive and not doable</li>
+</ul>
+
+<p>With the re-design, we need a solution that will solve these problems.</p>
+
+<h3 id="bloom-filter-implementation">Bloom filter implementation</h3>
+
+<p>Our bloom filter will have as a dependency our <code class="highlighter-rouge">User</code> model. Let’s say the <code class="highlighter-rouge">User</code> model has three attributes: <code class="highlighter-rouge">id</code>, <code class="highlighter-rouge">max_contacts</code> and <code class="highlighter-rouge">billing_cycle_started_at</code>:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">User</span> <span class="o">=</span> <span class="no">Struct</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:id</span><span class="p">,</span> <span class="ss">:max_contacts</span><span class="p">,</span> <span class="ss">:billing_cycle_started_at</span><span class="p">)</span>
+<span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="no">Time</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mo">01</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Here is our bloom filter implementation:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">require</span> <span class="s1">'zlib'</span>
+
+<span class="k">class</span> <span class="nc">BloomFilter</span>
+
+  <span class="c1"># http://www.igvita.com/2008/12/27/scalable-datasets-bloom-filters-in-ruby/</span>
+  <span class="c1"># 10 bits for 1% error approximation</span>
+  <span class="c1"># ~5 bits per 10 fold reduction in error approximation</span>
+  <span class="no">BITS_PER_ERROR_RATE</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">1</span>    <span class="o">=&gt;</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="mf">0.1</span>  <span class="o">=&gt;</span> <span class="mi">15</span><span class="p">,</span>
+    <span class="mf">0.01</span> <span class="o">=&gt;</span> <span class="mi">20</span>
+  <span class="p">}</span>
+  <span class="no">HASH_FUNCTIONS_COEFICIENT</span> <span class="o">=</span> <span class="mf">0.7</span> <span class="c1"># Math.log(2)</span>
+
+  <span class="nb">attr_reader</span> <span class="ss">:error_rate</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="ss">error_rate: </span><span class="p">)</span>
+    <span class="vi">@user</span> <span class="o">=</span> <span class="n">user</span>
+    <span class="vi">@error_rate</span> <span class="o">=</span> <span class="n">error_rate</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">indexes_for</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="n">hash_functions</span><span class="p">.</span><span class="nf">times</span><span class="p">.</span><span class="nf">map</span> <span class="p">{</span> <span class="o">|</span><span class="n">i</span><span class="o">|</span> <span class="no">Zlib</span><span class="p">.</span><span class="nf">crc32</span><span class="p">(</span><span class="s2">"</span><span class="si">#{</span><span class="n">key</span><span class="p">.</span><span class="nf">to_s</span><span class="p">.</span><span class="nf">strip</span><span class="p">.</span><span class="nf">downcase</span><span class="si">}</span><span class="s2">:</span><span class="si">#{</span><span class="n">i</span><span class="o">+</span><span class="n">seed</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="o">%</span> <span class="n">size</span> <span class="p">}</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">hash_functions</span>
+    <span class="vi">@hash_functions</span> <span class="o">||=</span> <span class="p">(</span><span class="n">bits</span> <span class="o">*</span> <span class="no">HASH_FUNCTIONS_COEFICIENT</span><span class="p">).</span><span class="nf">ceil</span><span class="p">.</span><span class="nf">to_i</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">seed</span>
+    <span class="vi">@seed</span> <span class="o">||=</span> <span class="n">since</span><span class="p">.</span><span class="nf">to_i</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">since</span>
+    <span class="vi">@since</span> <span class="o">||=</span> <span class="vi">@user</span><span class="p">.</span><span class="nf">billing_cycle_started_at</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">size</span>
+    <span class="vi">@size</span> <span class="o">||=</span> <span class="n">bits</span> <span class="o">*</span> <span class="vi">@user</span><span class="p">.</span><span class="nf">max_contacts</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">bits</span>
+    <span class="vi">@bits</span> <span class="o">||=</span> <span class="no">BITS_PER_ERROR_RATE</span><span class="p">.</span><span class="nf">fetch</span><span class="p">(</span><span class="n">error_rate</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">fingerprint</span>
+    <span class="vi">@fingerprint</span> <span class="o">||=</span> <span class="p">[</span><span class="vi">@user</span><span class="p">.</span><span class="nf">id</span><span class="p">,</span> <span class="vi">@user</span><span class="p">.</span><span class="nf">max_contacts</span><span class="p">,</span> <span class="n">seed</span><span class="p">].</span><span class="nf">join</span><span class="p">(</span><span class="s1">'.'</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>The most important part of the bloom filter is the method that generates the indexes for a given key, <code class="highlighter-rouge">indexes_for(key)</code>.</p>
+
+<p>Here’s an example usage:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">bloom_filter</span> <span class="o">=</span> <span class="no">BloomFilter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="ss">error_rate: </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">bloom_filter</span><span class="p">.</span><span class="nf">indexes_for</span><span class="p">(</span><span class="s1">'user1@example.com'</span><span class="p">)</span>
+<span class="c1"># [2872, 110, 3108, 2498, 4409, 751, 2861]</span>
+
+<span class="n">bloom_filter</span><span class="p">.</span><span class="nf">indexes_for</span><span class="p">(</span><span class="s1">'user2@example.com'</span><span class="p">)</span>
+<span class="c1"># [3992, 2262, 1788, 1970, 3185, 4135, 4957]</span>
+</code></pre></div></div>
+
+<p>As a hashing function we use <a href="https://en.wikipedia.org/wiki/Cyclic_redundancy_check">CRC32</a> with a custom seed per user that is the <code class="highlighter-rouge">billing_cycle_started_at</code> and the number of hashing functions based on the error rate (in this example we use an error rate of 1%).</p>
+
+<p>For the bloom filter to return consistent hashing indexes during a user’s billing cycle, the input parameters it depends on (<code class="highlighter-rouge">error_rate</code>, <code class="highlighter-rouge">@user.billing_cycle_started_at</code> and <code class="highlighter-rouge">@user.max_contacts</code>) should not change for the billing cycle until it gets reset. That is the <code class="highlighter-rouge">fingerprint</code> that, as we’ll see later, we’ll use as a redis key for the Redis bloom filter.</p>
+
+<h3 id="redis-bloom-filter">Redis bloom filter</h3>
+
+<p>Redis supports <code class="highlighter-rouge">getbit</code> and <code class="highlighter-rouge">setbit</code> operations for the <a href="https://redis.io/commands#string">String</a> type that make the individual updates simple. There is a special data type for bloom filters called <a href="https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/">rebloom</a> if you want to explore it, but here we’ll just use a standard Redis type.</p>
+
+<p>Here is our Redis bloom filter implementation:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">require</span> <span class="s1">'redis'</span>
+
+<span class="k">class</span> <span class="nc">RedisBloomFilter</span>
+  <span class="no">MAX_TTL</span> <span class="o">=</span> <span class="mi">31</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="c1"># max days in a month</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="vi">@user</span> <span class="o">=</span> <span class="n">user</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+    <span class="n">existing_indexes</span> <span class="o">=</span> <span class="n">redis</span><span class="p">.</span><span class="nf">pipelined</span> <span class="k">do</span>
+      <span class="n">keys</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">key</span><span class="o">|</span>
+        <span class="n">bloom</span><span class="p">.</span><span class="nf">indexes_for</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="nf">map</span> <span class="p">{</span> <span class="o">|</span><span class="n">index</span><span class="o">|</span> <span class="n">redis</span><span class="p">.</span><span class="nf">setbit</span><span class="p">(</span><span class="n">filter_key</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="n">new_keys_count</span> <span class="o">=</span> <span class="n">keys</span><span class="p">.</span><span class="nf">length</span><span class="p">.</span><span class="nf">times</span><span class="p">.</span><span class="nf">count</span> <span class="p">{</span> <span class="o">|</span><span class="n">i</span><span class="o">|</span>
+      <span class="n">existing_indexes</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">bloom</span><span class="p">.</span><span class="nf">hash_functions</span><span class="p">,</span> <span class="n">bloom</span><span class="p">.</span><span class="nf">hash_functions</span><span class="p">].</span><span class="nf">include?</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="n">total</span> <span class="o">=</span> <span class="n">redis</span><span class="p">.</span><span class="nf">incrby</span><span class="p">(</span><span class="n">counter_key</span><span class="p">,</span> <span class="n">new_keys_count</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">total</span> <span class="o">==</span> <span class="n">new_keys_count</span>
+      <span class="n">redis</span><span class="p">.</span><span class="nf">expire</span><span class="p">(</span><span class="n">filter_key</span><span class="p">,</span> <span class="no">MAX_TTL</span><span class="p">.</span><span class="nf">to_i</span><span class="p">)</span>
+      <span class="n">redis</span><span class="p">.</span><span class="nf">expire</span><span class="p">(</span><span class="n">counter_key</span><span class="p">,</span> <span class="no">MAX_TTL</span><span class="p">.</span><span class="nf">to_i</span><span class="p">)</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">count</span>
+    <span class="n">redis</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">counter_key</span><span class="p">).</span><span class="nf">to_i</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">include?</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">redis</span><span class="p">.</span><span class="nf">pipelined</span> <span class="k">do</span>
+      <span class="n">bloom</span><span class="p">.</span><span class="nf">indexes_for</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="nf">map</span> <span class="p">{</span> <span class="o">|</span><span class="n">index</span><span class="o">|</span> <span class="n">redis</span><span class="p">.</span><span class="nf">getbit</span><span class="p">(</span><span class="n">filter_key</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span> <span class="p">}</span>
+    <span class="k">end</span>
+
+    <span class="o">!</span><span class="n">values</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">field</span>
+    <span class="n">redis</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">filter_key</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="kp">private</span>
+
+  <span class="k">def</span> <span class="nf">redis</span>
+    <span class="vi">@redis</span> <span class="o">||=</span> <span class="no">Redis</span><span class="p">.</span><span class="nf">new</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">bloom</span>
+    <span class="vi">@bloom</span> <span class="o">||=</span> <span class="no">BloomFilter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="vi">@user</span><span class="p">,</span> <span class="ss">error_rate: </span><span class="mi">1</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">filter_key</span>
+    <span class="vi">@filter_key</span> <span class="o">||=</span> <span class="s2">"bloom:filter:</span><span class="si">#{</span><span class="n">key_suffix</span><span class="si">}</span><span class="s2">"</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">counter_key</span>
+    <span class="vi">@counter_key</span> <span class="o">||=</span> <span class="s2">"bloom:counter:</span><span class="si">#{</span><span class="n">key_suffix</span><span class="si">}</span><span class="s2">"</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">key_suffix</span>
+    <span class="vi">@key_suffix</span> <span class="o">||=</span> <span class="n">bloom</span><span class="p">.</span><span class="nf">fingerprint</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+<p>The <code class="highlighter-rouge">RedisBloomFilter</code> uses the <code class="highlighter-rouge">BloomFilter</code> implementation to produce the indexes that it manipulates in Redis. It also implements a counter of how many unique elements are added to the filter by increasing the count when it detects a unique insert. Using an error rate of 1% for the bloom filter means that the count can be for 1% lower than the actual count and in our case that is totally fine as we allow for a bigger grace overage to customer plans. It uses redis <code class="highlighter-rouge">pipelined</code> that sends operations in batch to avoid latency and improve performance by about 5-6 times. It also sets a TTLs on the keys to expire them after a month and it exposes the field for the in-memory filter.</p>
+
+<p>Here’s an example usage:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">redis_bloom_filter</span> <span class="o">=</span> <span class="no">RedisBloomFilter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+
+<span class="n">redis_bloom_filter</span><span class="p">.</span><span class="nf">insert</span><span class="p">([</span><span class="s1">'user1@example.com'</span><span class="p">,</span> <span class="s1">'user2@example.com'</span><span class="p">])</span>
+
+<span class="n">redis_bloom_filter</span><span class="p">.</span><span class="nf">count</span>
+<span class="c1"># =&gt; 2</span>
+
+<span class="n">redis_bloom_filter</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="s1">'user1@example.com'</span><span class="p">)</span>
+<span class="c1"># =&gt; true</span>
+
+<span class="n">redis_bloom_filter</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="s1">'user2@example.com'</span><span class="p">)</span>
+<span class="c1"># =&gt; true</span>
+
+<span class="n">redis_bloom_filter</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="s1">'user3@example.com'</span><span class="p">)</span>
+<span class="c1"># =&gt; false</span>
+</code></pre></div></div>
+
+<h3 id="in-memory-bloom-filter">In-memory Bloom filter</h3>
+
+<p>With the Redis implementation we solved half of the problem. We have a way to concurrently and quickly add elements to the bloom filter in Redis, but we still need a way to check if a bloom filter could accept a given set of elements without actually inserting the elements in the filter. This is useful when we want to prevent a list import before importing the list or stop a campaign from sending before starting it.</p>
+
+<p>To achieve that, we need an in-memory filter that we can initialize with the state of the Redis bloom filter and <a href="https://github.com/peterc/bitarray">bitarray</a> can help us with that. We have an important <a href="https://github.com/peterc/bitarray/pull/9">PR</a> that changes the storage representation i.e. the bits order in bitarray to match the way Redis stores them internally and a way to initialize a bitarray with a given field. To test it, you can fetch the <code class="highlighter-rouge">BitArray</code> that includes that patch from <a href="https://gist.github.com/dalibor/70b9f118b545880ece6381513e0123d2">here</a>.</p>
+
+<p>Here is the implementation of the in-memory bloom filter:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TemporaryBloomFilter</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="vi">@user</span> <span class="o">=</span> <span class="n">user</span>
+    <span class="vi">@bloom</span> <span class="o">=</span> <span class="no">BloomFilter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="vi">@user</span><span class="p">,</span> <span class="ss">error_rate: </span><span class="mi">1</span><span class="p">)</span>
+    <span class="vi">@redis_filter</span> <span class="o">=</span> <span class="no">RedisBloomFilter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="vi">@user</span><span class="p">)</span>
+    <span class="vi">@count</span> <span class="o">=</span> <span class="vi">@redis_filter</span><span class="p">.</span><span class="nf">count</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">count</span>
+    <span class="vi">@count</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+    <span class="n">keys</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">key</span><span class="o">|</span>
+      <span class="n">previous_indexes</span> <span class="o">=</span> <span class="vi">@bloom</span><span class="p">.</span><span class="nf">indexes_for</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="nf">map</span> <span class="p">{</span> <span class="o">|</span><span class="n">index</span><span class="o">|</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">bit_array</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">bit_array</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">value</span>
+      <span class="p">}</span>
+      <span class="vi">@count</span> <span class="o">+=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">previous_indexes</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">include?</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="o">!</span><span class="vi">@bloom</span><span class="p">.</span><span class="nf">indexes_for</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="nf">map</span> <span class="p">{</span> <span class="o">|</span><span class="n">index</span><span class="o">|</span> <span class="n">bit_array</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="p">}.</span><span class="nf">include?</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">over_limit?</span>
+    <span class="n">plan_over_limit_count</span> <span class="o">&gt;</span> <span class="mi">0</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">plan_over_limit_count</span>
+    <span class="vi">@count</span> <span class="o">-</span> <span class="vi">@user</span><span class="p">.</span><span class="nf">plan_contacts</span>
+  <span class="k">end</span>
+
+  <span class="kp">private</span>
+
+  <span class="k">def</span> <span class="nf">bit_array</span>
+    <span class="vi">@bit_array</span> <span class="o">||=</span> <span class="n">prepare_bit_array</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">prepare_bit_array</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="vi">@redis_filter</span><span class="p">.</span><span class="nf">field</span><span class="p">.</span><span class="nf">to_s</span>
+    <span class="n">current_field_length</span> <span class="o">=</span> <span class="n">field</span><span class="p">.</span><span class="nf">length</span>
+    <span class="n">max_field_length</span> <span class="o">=</span> <span class="p">(</span><span class="vi">@bloom</span><span class="p">.</span><span class="nf">size</span> <span class="o">/</span> <span class="mi">8</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">current_field_length</span> <span class="o">&lt;</span> <span class="n">max_field_length</span>
+      <span class="n">field</span> <span class="o">+=</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">"</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_field_length</span> <span class="o">-</span> <span class="n">current_field_length</span><span class="p">)</span>
+    <span class="k">end</span>
+
+    <span class="no">BitArray</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="vi">@bloom</span><span class="p">.</span><span class="nf">size</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>And an example usage:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">temporary_bloom_filter</span> <span class="o">=</span> <span class="no">TemporaryBloomFilter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+
+<span class="n">temporary_bloom_filter</span><span class="p">.</span><span class="nf">insert</span><span class="p">([</span><span class="s1">'user3@example.com'</span><span class="p">,</span> <span class="s1">'user4@example.com'</span><span class="p">,</span> <span class="s1">'user5@example.com'</span><span class="p">])</span>
+
+<span class="n">temporary_bloom_filter</span><span class="p">.</span><span class="nf">count</span>
+<span class="c1"># =&gt; 5</span>
+
+<span class="n">temporary_bloom_filter</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="s1">'user5@example.com'</span><span class="p">)</span>
+<span class="c1"># =&gt; true</span>
+
+<span class="n">temporary_bloom_filter</span><span class="p">.</span><span class="nf">include?</span><span class="p">(</span><span class="s1">'user6@example.com'</span><span class="p">)</span>
+<span class="c1"># =&gt; false</span>
+</code></pre></div></div>
+
+<h3 id="performance">Performance</h3>
+
+<p>Ruby’s in-memory implementation is few times slower than the C-implementation in <a href="https://github.com/igrigorik/bloomfilter-rb">bloomfilter-rb</a>, but still fast enough as it can process 1 million items in 5-10 seconds both calculating hash functions and doing BitArray inserts.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">total_items</span> <span class="o">=</span> <span class="mi">1_000_000</span>
+<span class="n">t1</span> <span class="o">=</span> <span class="no">Time</span><span class="p">.</span><span class="nf">now</span>
+<span class="n">bf</span> <span class="o">=</span> <span class="no">BloomFilter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="ss">error_rate: </span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ba</span> <span class="o">=</span> <span class="no">BitArray</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">total_items</span><span class="p">)</span>
+<span class="n">total_items</span><span class="p">.</span><span class="nf">times</span> <span class="k">do</span> <span class="o">|</span><span class="n">i</span><span class="o">|</span>
+  <span class="n">bf</span><span class="p">.</span><span class="nf">indexes_for</span><span class="p">(</span><span class="s2">"user</span><span class="si">#{</span><span class="n">i</span><span class="si">}</span><span class="s2">@example.com"</span><span class="p">).</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">j</span><span class="o">|</span>
+    <span class="n">ba</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="kp">true</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="no">Time</span><span class="p">.</span><span class="nf">now</span>
+<span class="nb">puts</span> <span class="n">t2</span><span class="o">-</span><span class="n">t1</span>
+
+<span class="c1"># =&gt; 7.485282645</span>
+</code></pre></div></div>
+
+<p>Redis performance is pretty solid as well. It can handle around 70-80k operations per second and when using <code class="highlighter-rouge">pipelined</code> mode for our batches of 350, we get 5-6 times more operations:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">$</span> <span class="n">redis</span><span class="o">-</span><span class="n">benchmark</span> <span class="o">-</span><span class="n">q</span> <span class="o">-</span><span class="n">n</span> <span class="mi">100000</span> <span class="o">-</span><span class="no">P</span> <span class="mi">350</span>
+<span class="no">PING_INLINE</span><span class="p">:</span> <span class="mf">373134.31</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">PING_BULK</span><span class="p">:</span> <span class="mf">421940.94</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">SET</span><span class="p">:</span> <span class="mf">369003.69</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">GET</span><span class="p">:</span> <span class="mf">396825.38</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">INCR</span><span class="p">:</span> <span class="mf">344827.59</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">LPUSH</span><span class="p">:</span> <span class="mf">362318.84</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">LPOP</span><span class="p">:</span> <span class="mf">389105.06</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">SADD</span><span class="p">:</span> <span class="mf">353356.91</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">SPOP</span><span class="p">:</span> <span class="mf">361010.81</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">LPUSH</span> <span class="p">(</span><span class="n">needed</span> <span class="n">to</span> <span class="n">benchmark</span> <span class="no">LRANGE</span><span class="p">):</span> <span class="mf">370370.34</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">LRANGE_100</span> <span class="p">(</span><span class="n">first</span> <span class="mi">100</span> <span class="n">elements</span><span class="p">):</span> <span class="mf">61050.06</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">LRANGE_300</span> <span class="p">(</span><span class="n">first</span> <span class="mi">300</span> <span class="n">elements</span><span class="p">):</span> <span class="mf">17494.75</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">LRANGE_500</span> <span class="p">(</span><span class="n">first</span> <span class="mi">450</span> <span class="n">elements</span><span class="p">):</span> <span class="mf">11043.62</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">LRANGE_600</span> <span class="p">(</span><span class="n">first</span> <span class="mi">600</span> <span class="n">elements</span><span class="p">):</span> <span class="mf">7965.59</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+<span class="no">MSET</span> <span class="p">(</span><span class="mi">10</span> <span class="n">keys</span><span class="p">):</span> <span class="mf">202839.75</span> <span class="n">requests</span> <span class="n">per</span> <span class="n">second</span>
+</code></pre></div></div>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>This custom implementation of a bloom filter turned out pretty solid and robust in our production environment. We have a Kibana dashboard monitoring the bloom filter updates over time giving us much better insights than our previous implementation.</p>
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://dalibornasevic.com">
+          <img class="rounded mr-2" src="https://avatars.githubusercontent.com/dalibor" alt="Dalibor Nasevic" width="64">
+          <span class="author-details">
+            <h6>Dalibor Nasevic</h6>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

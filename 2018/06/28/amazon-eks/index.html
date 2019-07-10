@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>GoDaddy and Amazon EKS — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2018/06/28/amazon-eks/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2018/06/28/amazon-eks/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/ekscover.jpg">
+  
+
+  
+  <meta property="og:title" content="GoDaddy and Amazon EKS — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="GoDaddy's engineering teams need a robust solution for running container-based workloads. Amazon EKS gives us a shared responsibility service model that minimizes operational complexity and delivers the powerful benefits of running on Kubernetes.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--amazon-eks">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+<div class="cover-image" style="background-image: url(/engineering/assets/images/ekscover.jpg);"></div>
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    GoDaddy and Amazon EKS
+  </h1>
+
+  <p>Imagine nearly 200 engineering teams, many of whom are looking for a solution to running container workloads in order to reduce 
+operational complexity, manage orchestration and scale horizontally on the fly. What happens when they don’t have a common 
+solution at hand? By nature, engineers will seek out a solution, evaluate, and then begin solving problems. There are a number 
+of viable, useful and technically sound container runtime solutions out there. If these teams are operating independently, not 
+every team will choose the same solution. The downside to this is that each of these solutions can be complex to operate and each 
+has its own best practices. As teams grow, shrink, and shift, it becomes incrementally more difficult and expensive to keep
+operating lots of different solutions over time, making it harder to combine efforts from various teams on particular projects, or 
+to fold projects together under a common team. The risks of siloing knowledge of best practices and accumulating technical debt 
+surrounding bespoke, single-case solutions are high.</p>
+
+<p>A predictable and potentially viable way to solve this would be to attempt to break out our operation of <a href="https://kubernetes.io/">Kubernetes</a>, the engine we chose, into a platform team and offer it to other teams “as a service.” This solves the 
+problem of the diversity of solutions in play and focuses the technical expertise of operating a complex environment on one team. 
+However, many problems remain.</p>
+
+<p>Running an “as a service” container solution requires a solid definition of the platform’s responsibility versus the product 
+teams’ responsibility. In an environment such as Kubernetes, it can be challenging to debug and optimize an application. This is 
+because the problem space is split between the Kubernetes control plane (master nodes with their core context services, such as 
+kube-controller-manager) and the worker nodes where the application runs. So, for example, if a particular high volume service is 
+experiencing slow load times or intermittent interruptions, the solution might be to tune kube-controller-manager’s qps and burst 
+settings or kube-apiserver’s max-requests-inflight. But the problem could also be in the application’s configuration or its pod 
+runtime settings. It can be very difficult to divide up the responsibilities for the cluster between a platform team and the 
+various application teams who are using it.  It can be even harder to do so in a way that can scale across an organization or 
+across the company.</p>
+
+<p>Operating such a service also requires an integrated authentication and authorization mechanism so that access to resources is 
+appropriately gated. It requires an implementation of some kind of charge-back model so that the cost of the resources is shared 
+among the teams using the solution. It requires the members of that platform team to be able to handle the issues generated by 
+potentially hundreds of teams of engineers, to keep on top of the needs of those teams, to keep the compute infrastructure 
+supporting those teams appropriately scaled, to make capital expenditures when the resource pool is deemed too thin, and more. A
+fully funded platform effort could address all of these issues. But what if operating “as a service” infrastructures that span from
+the resource and virtualization layer through the container runtime layer and all the way up to end-user applications and services
+isn’t the main distinguishing feature of your business? What if you need your hundreds of teams of engineers to be focused on the
+tooling and customer-facing products that differentiate your products from your competitors? In short, if your company’s primary 
+mission isn’t running these on-premises “as a service” solutions, it’s difficult to justify the significant person time and 
+investment that is needed to keep it running successfully for a large engineering organization.</p>
+
+<p>Enter Amazon Web Services (AWS) and <a href="https://aws.amazon.com/eks">Amazon Elastic Container Service for Kubernetes (EKS)</a>. As a 
+foundation, AWS offers us the tools needed to track our expenditures, team by team, organization by organization, without having 
+to completely implement our own model for managing expense. They provide us a clearly articulated Shared Responsibility Model that 
+offloads many layers of operational responsibility to their own scaled-out support teams across all regions and services. In 
+addition, they let us scale out our resources as-needed and with an operational expense model rather than a capital expenditure 
+model which simplifies our process and lessens our risk of spending money where we don’t need to.</p>
+
+<p>Kubernetes is a flexible, sophisticated tool for running workloads in a common way regardless of whether they are running in our 
+on-premise infrastructure or on AWS. This gives us a simplified operational model for our software deployment and runtime 
+management and monitoring and at the same time simplifies migration to AWS from our existing infrastructure. EKS in particular 
+offers an enormous benefit to GoDaddy. Our engineers use Kubernetes in incredibly diverse ways. In particular, our usage divides 
+up into four primary use cases:</p>
+
+<ol>
+  <li>Batch: event- or schedule-driven, finite duration jobs. An example is a security scan, which usually contains standard 
+container model definitions and minimal operational complexity</li>
+  <li>Small services: one-to-ten pod deployments with one container each, normally a traditional 
+<a href="https://en.wikipedia.org/wiki/LAMP_(software_bundle)">LAMP</a>-style web service</li>
+  <li>Big services: hundreds of pods with multiple containers, usually representing an entire microservices architecture tied back to 
+a GoDaddy product line, such as a commerce system</li>
+  <li>Massive, end-user containerized services: thousands-to-hundreds of thousands of pods per cluster, each with thousands of nodes 
+and multiple containers per pod in a sophisticated end-user architecture</li>
+</ol>
+
+<p>As an example of the last, Managed WordPress 2.0 (MWP2) was developed on Kubernetes to produce managed, highly available WordPress 
+sites that offer our users fantastic performance, scalability and flexibility. We solved problems with traditional shared hosting
+implementations of WordPress by using containers and taking advantage of the overlay filesystem, giving flexibility to site owners 
+to be on the versions of PHP and WordPress they want to be on. We used Kubernetes’ horizontal scaling capabilities and made good 
+use of cachine to keep the performance of the WordPress system as high as possible.</p>
+
+<p>But this is only one of many ways we are using this powerful container runtime and orchestration platform. We are also running 
+sophisticated CICD pipelines, automating security scans, deploying and managing both internally and externally facing proxies and 
+operating and scaling core customer services this way. Our Presence and Commerce systems, aftermarket DNS sales and core data 
+application infrastructure are tested, built, deployed and scaled using Kubernetes.</p>
+
+<p>Our four primary use cases for container workloads demand many different configurations, management, and scaling requirements on 
+the Kubernetes clusters. EKS takes the operational complexity out of managing these clusters. First, it manages the scaling and 
+coordination of the control plane’s core infrastructure, eliminating the need for GoDaddy to administer Kubernetes master nodes. 
+Second, because of the deep integration of EKS with other AWS services, GoDaddy can leverage massive benefits from <a href="https://aws.amazon.com/elasticloadbalancing/">Elastic Load 
+Balancers</a>, <a href="https://aws.amazon.com/autoscaling/">auto-scaling</a>, <a href="https://aws.amazon.com/cloudtrail/">AWS CloudTrail</a> logging, <a href="https://aws.amazon.com/cloudwatch/">AWS Cloudwatch</a> monitoring, and event-driven 
+programming using <a href="https://aws.amazon.com/lambda/">AWS Lambda</a>. Third, we can manage the Kubernetes worker infrastructure using 
+GoDaddy’s best practices through <a href="https://aws.amazon.com/cloudformation/">AWS CloudFormation</a>. AWS CloudFormation enables GoDaddy 
+to define and deploy infrastructure as code, which is then used in conjunction with 
+<a href="https://aws.amazon.com/servicecatalog/">AWS Service Catalog</a> to provide governance and best practices.</p>
+
+<p>Getting started with EKS is simple. Before you begin, you should have kubectl and the Heptio Authenticator to allow IAM 
+authentication for your Kubernetes cluster installed. In addition, you should have the AWS CLI installed and set up with 
+credentials to access your account. Full instructions on setting up these prerequisites can be found in the <a href="https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html">Getting Started 
+guide</a>.</p>
+
+<p>There are two basic tasks involved in getting your AWS Kubernetes cluster up and running:</p>
+
+<ol>
+  <li>Get your cluster up: this is the control plane, including the Kubernetes masters and services, and</li>
+  <li>Get your worker nodes up: this includes the EC2 instances you’ll be running your pods on</li>
+</ol>
+
+<p>To get your cluster going, you need nothing more than a VPC,
+an <a href="https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html">EKS role to associate with the cluster</a>, subnets 
+selected from the VPC for your workers, and security groups for them to run under.  Using the <a href="https://docs.aws.amazon.com/cli/latest/reference/eks/index.html">AWS CLI</a>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws eks create-cluster \
+  --name &lt;name of your cluster&gt; \
+  --role-arn &lt;arn of the EKS role you created&gt; \
+  --resources-vpc-config subnetIds=&lt;subnet id 1&gt;,&lt;subnet id 2&gt;,securityGroupIds=&lt;security group id 1&gt;,&lt;security group id 2&gt;
+</code></pre></div></div>
+
+<p>Another way to do this is to use the AWS canonical CloudFormation template and create a stack with it:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws cloudformation create-stack \
+  --stack-name &lt;stack name&gt; \
+  --template-url https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-vpc-sample.yaml
+</code></pre></div></div>
+
+<p>This option will create a new VPC with new subnets and security groups and launch the cluster there.  Note that the pricing of the
+EKS control plane is $0.20/hour, so if you’re experimenting on a budget, be sure to keep track of how long your cluster is running.</p>
+
+<p>The second set of things you’ll need for your cluster are <a href="https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html">the worker nodes</a>. Here, the current recommendation is to use another canonical AWS-developed CloudFormation stack definition 
+to get going quickly.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aws cloudformation create-stack \
+  --stack-name &lt;stack name&gt; \
+  --template-url https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-nodegroup.yaml
+  --parameters \
+    ParameterKey=ClusterName,ParameterValue=&lt;the name you gave your cluster&gt; \
+    ParameterKey=ClusterControlPlaneSecurityGroup,ParameterValue=&lt;security group id 1&gt;,&lt;security group id 2&gt; \
+    ParameterKey=NodeGroupName,ParameterValue=&lt;a name for your node group and the autoscaling group it is a part of&gt; \
+    ParameterKey=NodeAutoScalingGroupMinSize,ParameterValue=&lt;autoscaling group minimum number of nodes&gt; \
+    ParameterKey=NodeAutoScalingGroupMaxSize,ParameterValue=&lt;autoscaling group maximum number of nodes&gt; \
+    ParameterKey=NodeInstanceType,ParameterValue=&lt;the instance type for your EC2 instances in the group&gt; \
+    ParameterKey=VpcId,ParameterValue=&lt;the VPC id of your EKS cluster&gt; \
+    ParameterKey=Subnets,ParameterValue=&lt;subnet id 1&gt;,&lt;subnet id 2&gt; \
+    ParameterKey=KeyName,ParameterValue=&lt;the EC2 keypair for access via SSH to the EC2 nodes in your group&gt; \
+    ParameterKey=NodeImageId,ParameterValue=&lt;the AMI ID for your EKS-optimized worker nodes&gt;
+</code></pre></div></div>
+
+<p>The AMIs, which are based on Amazon Linux 2, are listed by region and can be found in the <a href="https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html">documentation for launching workers</a>.  After your cluster and workers are created and launched,
+you must ensure your workers can join the cluster by applying a ConfigMap that will configure the cluster appropriately. You
+can find complete instructions in the <a href="https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html">Getting Started guide</a>.</p>
+
+<p>That’s all there is to it.  Within a few minutes, you can have a Kubernetes cluster integrated into your AWS account and ready
+for your workloads.</p>
+
+<p>Our engineering teams embrace the DevOps model, where they own the process of developing, operating and monitoring the 
+infrastructure for their products in the same way that they develop their customer-facing applications. Using AWS Service Catalog 
+as a product portfolio manager, GoDaddy can define standard settings for products with AWS CloudFormation definitions, enabling 
+teams to iterate according to their own Service definitions within the boundaries that we determine to be both secure and 
+performant. This approach lets GoDaddy apply centralized governance and help teams across the company, while still maintaining a 
+path for radiating best practices and new knowledge out to the company.</p>
+
+<p>Because GoDaddy hosts millions of domain names, websites and web services, we need an environment that scales to our needs while 
+maintaining operational efficiency and minimizing complexity. EKS offers us an industry standard container runtime and 
+orchestration engine that enables a clear path for migrating workloads from our on-premises infrastructure to AWS. It helps us 
+simplify how we engineer and lets us focus on our ability to offer differentiated and delightful experiences for our customers, 
+who look to GoDaddy to provide them the platform for creating and managing their independent ventures.</p>
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://www.linkedin.com/in/zeroaltitude/">
+          <img class="rounded mr-2" src="/engineering/assets/images/eabrams.jpg" alt="Edward Abrams" width="64">
+          <span class="author-details">
+            <h6>Edward Abrams</h6>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+

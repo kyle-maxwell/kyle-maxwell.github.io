@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Reduxful: Manage RESTful data with Redux — GoDaddy Engineering Blog</title>
+  <meta name="description" content="Information from our engineering team about the technology and tools we use to create software which empowers small businesses around the world to build and market their digital identities.
+">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="/engineering/assets/css/main.css">
+
+  <meta name="theme-color" content="#4095e8">
+  <meta name="msapplication-TileColor" content="#4095e8">
+  <link rel="apple-touch-icon" sizes="180x180" href="/engineering/assets/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/engineering/assets/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/engineering/assets/images/favicon-16x16.png">
+  <link rel="manifest" href="/engineering/site.webmanifest">
+  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/engineering/feed.xml" title="GoDaddy Engineering Blog" />
+
+  
+  <link rel="canonical" href="http://localhost:4000/2018/11/05/reduxful-manage-restful-data-with-redux/">
+  
+
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="GoDaddy Engineering Blog">
+  <meta property="og:url" content="http://localhost:4000/2018/11/05/reduxful-manage-restful-data-with-redux/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@GodaddyOSS">
+
+  
+  <meta property="og:image" content="http://localhost:4000/assets/images/reduxful/cover.png">
+  
+
+  
+  <meta property="og:title" content="Reduxful: Manage RESTful data with Redux — GoDaddy Engineering Blog">
+  
+
+  
+  <meta property="og:description" content="Introducing Reduxful, an open source project which aims to reduce the boilerplate for managing RESTful data with Redux by generating actions, reducers, and selectors for you.">
+  
+
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: Boing-Bold;
+    src: url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/boing/1.0/Boing-Bold.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-bold.woff) format("woff");
+    font-weight: 700;
+    font-display: swap;
+  }
+  </style>
+  <link rel="preload" href="//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2" as="font" type="font/woff2" crossOrigin />
+  <style>
+  @font-face {
+    font-family: gdsherpa;
+    src: url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff2) format("woff2"), url(//img1.wsimg.com/ux/fonts/sherpa/1.0/gdsherpa-regular.woff) format("woff");
+    font-display: swap;
+  }
+  </style>
+</head>
+
+  <body class="layout--post page--reduxful-manage-restful-data-with-redux">
+    <nav class="navbar utility-bar navbar-dark bg-theme-grey-dark px-3 py-0">
+  <a class="navbar-brand pt-1 pb-0" href="https://www.godaddy.com">
+    <svg class="logo-mark logo-mark-white" height="18" viewBox="0 0 367.7 78.1" xmlns="http://www.w3.org/2000/svg"><path class="logo-mark-color" d="M95.3 38.6c0-4.6-3.6-8.4-8.3-8.4-4.6 0-8.3 3.8-8.3 8.4s3.6 8.3 8.3 8.3 8.3-3.7 8.3-8.3m14.4.1c0 11.9-10.1 21.4-22.6 21.4-12.6 0-22.6-9.5-22.6-21.4 0-12 10.1-21.6 22.6-21.6 12.5-.1 22.6 9.6 22.6 21.6M154.8 30c0-8-5.6-15-13.9-15h-11.5v30.3h11.5c8.3 0 13.9-7.3 13.9-15.3m15.5 0c0 17.1-12.1 28.8-29.1 28.8h-24.6c-1.2 0-2.1-.9-2.1-2V3.4c0-1.1.9-2 2.1-2h24.6c17.1.1 29.1 11.5 29.1 28.6M194.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M192.2 17c4.9 0 8.8 1.8 10.5 4.3v-1.2c0-1.1.9-1.9 1.9-1.9H215c1.1 0 1.9.8 1.9 1.9v36.8c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-1.7 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6s10-21.4 20.4-21.4M241.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4 0 4.7 3.7 8.4 8.3 8.4M238.9 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H262c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S228.7 17 238.9 17M288.4 46.9c4.6 0 8.3-3.8 8.3-8.4s-3.6-8.4-8.3-8.4c-4.6 0-8.3 3.8-8.3 8.4.1 4.7 3.7 8.4 8.3 8.4M286 17c5 0 8.9 1.9 10.7 4.1V3.4c0-1.1.9-1.9 1.9-1.9H309c1.1 0 1.9.8 1.9 1.9V57c0 1.1-.8 1.9-1.9 1.9h-10.3c-1.1 0-1.9-.8-1.9-1.9v-1.2c-2.1 2.5-5.7 4.3-10.6 4.3-10.4 0-20.4-8.3-20.4-21.6S275.7 17 286 17M345.5 64.7c-2.6 8.6-8.6 13.4-18 13.4-5.1 0-10.1-1.7-13.3-4.5-.5-.5-.8-1.1-.8-1.7 0-.5.2-1.1.7-1.7l3.9-5.9c.6-.8 1.5-.9 1.7-.9.9 0 1.3.2 2.1.8 1.2.8 2.9 1.8 4.8 1.8 1.6 0 3.7-.7 4.5-3.1l1.3-4.1H326c-1.3 0-2.1-.9-2.5-2L313 21.5c-.2-.9-.3-1.4-.3-1.7 0-.8.6-1.5 1.7-1.5h12.4c1.1 0 1.7 1 2 2l6.9 25.4h.5l5.5-25.4c.2-1 .9-2 2-2h12.6c1.2 0 1.7.7 1.7 1.5 0 .3-.1.8-.3 1.7l-12.2 43.2M49.7 50.9c-5 6.9-13.2 9.2-20.5 9.2C12.4 60.1 0 47.6 0 30.2.1 13.5 13.5.2 31 .2c13 0 23.4 5.5 28.1 16 .6 1.2 1 3.2-2.5 3.8l-9.2 1.6c-2.1.4-3.3-1-3.7-1.6-2.7-3.7-7.1-6.2-12.4-6.2-9.2 0-15.7 7-15.7 16.3 0 10.3 7.4 16.3 15.5 16.3 5.4 0 9.8-2 12.7-5.8h-8.1c-1.2 0-2.1-.9-2.1-2v-7.7c0-1.1.9-2 2.1-2h24.7c1.2 0 2.1.9 2.1 2v25.9c0 1.1-.9 2-2.1 2h-8.6c-1.2 0-2.1-.9-2.1-2v-5.9M359.8 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14.4c-3.5 0-6.4-2.9-6.4-6.4s2.9-6.4 6.4-6.4 6.4 2.9 6.4 6.4-2.9 6.4-6.4 6.4z"></path><path class="logo-mark-color" d="M361.4 6.5c0-.4-.1-.7-.4-.8-.2-.2-.6-.4-.9-.4h-1.4v2.3h1.4c.4 0 .7-.1.9-.4.2-.2.4-.4.4-.7zm-3.1 5.9h-1.5c-.1 0-.1 0-.2-.1 0-.1-.1-.1-.1-.2V3.8c0-.1 0-.1.1-.2.1 0 .1-.1.2-.1h3.3c1.1 0 1.9.2 2.5.8s.9 1.3.9 2.1c0 .6-.1 1.1-.5 1.5-.4.5-.7.8-1.2 1.1l1.9 2.9c.1.1.1.2 0 .4 0 .1-.1.1-.2.1H362c-.1 0-.2 0-.4-.1-.1 0-.1-.1-.2-.2l-1.6-2.7h-1.2V12c0 .1 0 .1-.1.2s-.1.2-.2.2z"></path></svg>
+    &nbsp;
+  </a>
+</nav>
+
+<nav class="navbar navbar-top navbar-expand-md navbar-light bg-white">
+  <a class="navbar-brand font-weight-bold" href="http://localhost:4000/engineering/" title="GoDaddy Engineering">
+    GoDaddy Engineering
+  </a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topnav" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="topnav">
+    <ul class="navbar-nav ml-auto">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/featured-projects/" title="Featured Projects">
+          Featured Projects
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/blog-posts/" title="Blog Posts">
+          Blog Posts
+        </a>
+      </li>
+      
+      
+      
+      <li class="nav-item">
+        <a class="nav-link font-weight-bold" href="http://localhost:4000/engineering/code-of-conduct/" title="Code of Conduct">
+          Code of Conduct
+        </a>
+      </li>
+      
+      
+      <li class="nav-item">
+        <a class="nav-link btn btn-primary text-white font-weight-bold px-3" href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+          Join us!
+        </a>
+      </li
+    </ul>
+  </div>
+</nav>
+
+
+
+
+
+<div class="container text-line-height-2x pt-3">
+  <h1 class="mb-3 text-line-height-1-5-em">
+    Reduxful: Manage RESTful data with Redux
+  </h1>
+
+  <p>As you may know, a web app’s client-side state is often related to data
+requested from RESTful services. There are several approaches to managing this
+relationship, much of it depending on the technology stack you are working with.
+At GoDaddy, we have standardized on building web apps with React and using Redux
+for state management. We have recently open sourced a project to help manage 
+RESTful data with Redux which we are now introducing, titled <strong>Reduxful</strong>.</p>
+
+<p>Utilizing Redux to keep track of your requested data has many benefits.
+A common example is when you have different areas of your application that need
+to request data from the same endpoint. Centralizing your data into a Redux
+store allows access to to it from different application areas, while retrieving
+that data with a single request.</p>
+
+<p>If you have worked with Redux or a Flux implementation before, you know that
+setting up actions and reducers or stores can require tons of boilerplate code.
+Even if you have not done this before, an example setup is presented next that
+we will work with, followed by seeing how Reduxful makes the setup simpler.</p>
+
+<h3 id="an-example-redux-setup">An example Redux setup</h3>
+
+<p>Let us consider what it might look like to tie into a simple API to view
+doodads for a React app that needs to make requests from only two endpoints;
+one that gets a list of doodads, and another that gets details for a specific
+doodad.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// actionCreators.js</span>
+
+<span class="k">import</span> <span class="nx">fetch</span> <span class="k">from</span> <span class="s1">'cross-fetch'</span><span class="p">;</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">GET_DOODAD_START</span> <span class="o">=</span> <span class="s1">'GET_DOODAD_START'</span><span class="p">;</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">GET_DOODAD_SUCCESS</span> <span class="o">=</span> <span class="s1">'GET_DOODAD_SUCCESS'</span><span class="p">;</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">GET_DOODAD_LIST_START</span> <span class="o">=</span> <span class="s1">'GET_DOODAD_LIST_START'</span><span class="p">;</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">GET_DOODAD_LIST_SUCCESS</span> <span class="o">=</span> <span class="s1">'GET_DOODAD_LIST_SUCCESS'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">getDoodadStart</span> <span class="o">=</span> <span class="nx">doodadId</span> <span class="o">=&gt;</span> <span class="p">({</span>
+  <span class="na">type</span><span class="p">:</span> <span class="nx">GET_DOODAD_START</span><span class="p">,</span>
+  <span class="na">payload</span><span class="p">:</span> <span class="p">{</span> <span class="nx">doodadId</span> <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="kd">const</span> <span class="nx">getDoodadSuccess</span> <span class="o">=</span> <span class="p">(</span><span class="nx">doodadId</span><span class="p">,</span> <span class="nx">value</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+  <span class="na">type</span><span class="p">:</span> <span class="nx">GET_DOODAD_SUCCESS</span><span class="p">,</span>
+  <span class="na">payload</span><span class="p">:</span> <span class="p">{</span> <span class="nx">doodadId</span><span class="p">,</span> <span class="nx">value</span> <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="kd">const</span> <span class="nx">getDoodadListStart</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">({</span>
+  <span class="na">type</span><span class="p">:</span> <span class="nx">GET_DOODAD_LIST_START</span><span class="p">,</span>
+  <span class="na">payload</span><span class="p">:</span> <span class="p">{</span> <span class="nx">doodadId</span> <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="kd">const</span> <span class="nx">getDoodadListSuccess</span> <span class="o">=</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+  <span class="na">type</span><span class="p">:</span> <span class="nx">GET_DOODAD_LIST_SUCCESS</span><span class="p">,</span>
+  <span class="na">payload</span><span class="p">:</span> <span class="p">{</span> <span class="nx">value</span> <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">getDoodad</span> <span class="o">=</span> <span class="nx">doodadId</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">dispatch</span><span class="p">(</span><span class="nx">getDoodadStart</span><span class="p">(</span><span class="nx">doodadId</span><span class="p">));</span>
+  <span class="k">return</span> <span class="nx">fetch</span><span class="p">(</span><span class="s2">`http://api.my-service.com/doodads/</span><span class="p">${</span><span class="nx">doodadId</span><span class="p">}</span><span class="s2">`</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">response</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">json</span><span class="p">())</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">json</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">(</span><span class="nx">getDoodadSuccess</span><span class="p">(</span><span class="nx">doodadId</span><span class="p">,</span> <span class="nx">json</span><span class="p">)));</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">getDoodadList</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">dispatch</span><span class="p">(</span><span class="nx">getDoodadListStart</span><span class="p">());</span>
+  <span class="k">return</span> <span class="nx">fetch</span><span class="p">(</span><span class="s2">`http://api.my-service.com/doodads`</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">response</span> <span class="o">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">json</span><span class="p">())</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">json</span> <span class="o">=&gt;</span> <span class="nx">dispatch</span><span class="p">(</span><span class="nx">getDoodadListSuccess</span><span class="p">(</span><span class="nx">json</span><span class="p">)));</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>Here we have two action creators, <code class="highlighter-rouge">getDoodad</code> and <code class="highlighter-rouge">getDoodadList</code> which utilize
+<code class="highlighter-rouge">fetch</code> to make the API call and dispatch the base actions. These action
+creators are reliant upon the <a href="https://github.com/reduxjs/redux-thunk#readme">redux-thunk</a> middleware to be asynchronous,
+allowing us to dispatch our success action when our request comes back.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// reducers.js</span>
+
+<span class="k">import</span> <span class="p">{</span>
+  <span class="nx">GET_DOODAD_START</span><span class="p">,</span>
+  <span class="nx">GET_DOODAD_SUCCESS</span><span class="p">,</span>
+  <span class="nx">GET_DOODAD_LIST_START</span><span class="p">,</span>
+  <span class="nx">GET_DOODAD_LIST_SUCCESS</span>
+<span class="p">}</span> <span class="k">from</span> <span class="s1">'./actionCreators'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">doodads</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{},</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">GET_DOODAD_START</span> <span class="o">===</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodadId</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">;</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">value</span> <span class="p">}</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">[</span><span class="nx">doodadId</span><span class="p">]</span> <span class="o">||</span> <span class="p">{});</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="p">...</span><span class="nx">state</span><span class="p">,</span>
+      <span class="p">[</span><span class="nx">doodadId</span><span class="p">]:</span> <span class="p">{</span>
+        <span class="nx">value</span><span class="p">,</span>
+        <span class="na">isLoaded</span><span class="p">:</span> <span class="o">!!</span><span class="nx">value</span><span class="p">,</span>
+        <span class="na">isUpdating</span><span class="p">:</span> <span class="kc">true</span>
+      <span class="p">}</span>
+    <span class="p">};</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">GET_DOODAD_SUCCESS</span> <span class="o">===</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodadId</span><span class="p">,</span> <span class="nx">value</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">;</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="p">...</span><span class="nx">state</span><span class="p">,</span>
+      <span class="p">[</span><span class="nx">doodadId</span><span class="p">]:</span> <span class="p">{</span>
+        <span class="nx">value</span><span class="p">,</span>
+        <span class="na">isLoaded</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="na">isUpdating</span><span class="p">:</span> <span class="kc">false</span>
+      <span class="p">}</span>
+    <span class="p">};</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">const</span> <span class="nx">doodadList</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{},</span> <span class="nx">action</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">GET_DOODAD_LIST_START</span> <span class="o">===</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">value</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">state</span><span class="p">;</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="nx">value</span><span class="p">,</span>
+      <span class="na">isLoaded</span><span class="p">:</span> <span class="o">!!</span><span class="nx">value</span><span class="p">,</span>
+      <span class="na">isUpdating</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">};</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">GET_DOODAD_LIST_SUCCESS</span> <span class="o">===</span> <span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">value</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">action</span><span class="p">.</span><span class="nx">payload</span><span class="p">;</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="nx">value</span><span class="p">,</span>
+      <span class="na">isLoaded</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+      <span class="na">isUpdating</span><span class="p">:</span> <span class="kc">false</span>
+    <span class="p">};</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="p">{</span>
+  <span class="nx">doodads</span><span class="p">,</span>
+  <span class="nx">doodadList</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>Our first reducer here allows us to keep track of each doodad request
+separately, keyed uniquely by doodadId. Additionally, we are able to see if a
+request is in flight by checking the <code class="highlighter-rouge">isUpdating</code> property, or if we have a
+response by checking <code class="highlighter-rouge">isLoaded</code>.</p>
+
+<div class="language-js highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// selectors.js</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">selectDoodad</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="nx">doodadId</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodads</span> <span class="o">=</span> <span class="p">{}}</span> <span class="o">=</span> <span class="nx">state</span><span class="p">;</span>
+  <span class="k">return</span> <span class="nx">doodads</span><span class="p">[</span><span class="nx">doodadId</span><span class="p">];</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">selectDoodadList</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">state</span><span class="p">.</span><span class="nx">doodadList</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>For each request, at least two actions and creators are required with reducer
+logic put in place. While it may not appear to be a <em>ton</em> of code above,
+remember that this is for requests to only two endpoints. This code will scale
+linearly as more endpoints are added to the app.</p>
+
+<p>The complexity grows when you start to add additional features. Say you need to 
+start tracking additional details of a request such as duration or start and
+end times. Also, note that we have no error handling above! This is an
+additional implementation detail that will also scale linearly with each
+endpoint you need to add.</p>
+
+<h3 id="an-example-react-app">An example React app</h3>
+
+<p>Now that we have our Redux tools in place, let us see how we would use them in
+a simple React app. Our app will have a top-level component to select doodads
+from our list response, and a detail component to show our item response based
+on the selection.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ViewDoodadDetails.js</span>
+
+<span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">PropTypes</span> <span class="k">from</span> <span class="s1">'prop-types'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">connect</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react-redux'</span><span class="p">;</span>
+
+<span class="k">import</span> <span class="p">{</span> <span class="nx">selectDoodad</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'./selectors'</span><span class="p">;</span>
+<span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">actionCreators</span> <span class="k">from</span> <span class="s1">'./actionCreators'</span><span class="p">;</span>
+
+<span class="kd">class</span> <span class="nx">ViewDoodadDetails</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+
+  <span class="kr">static</span> <span class="nx">propTypes</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">doodadId</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">string</span><span class="p">.</span><span class="nx">isRequired</span><span class="p">,</span>
+    <span class="c1">// injected</span>
+    <span class="na">getDoodad</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">func</span><span class="p">.</span><span class="nx">isRequired</span><span class="p">,</span>
+    <span class="na">doodad</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">shape</span><span class="p">({</span>
+      <span class="na">value</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">object</span><span class="p">,</span>
+      <span class="na">isLoaded</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">bool</span><span class="p">.</span><span class="nx">isRequired</span>
+    <span class="p">})</span>
+  <span class="p">};</span>
+
+  <span class="nx">componentDidMount</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodadId</span><span class="p">,</span> <span class="nx">getDoodad</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">doodadId</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">getDoodad</span><span class="p">(</span><span class="nx">doodadId</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="nx">componentDidUpdate</span><span class="p">(</span><span class="nx">prevProps</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodadId</span><span class="p">,</span> <span class="nx">getDoodad</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">doodadId</span> <span class="o">!==</span> <span class="nx">prevProps</span><span class="p">.</span><span class="nx">doodadId</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">getDoodad</span><span class="p">(</span><span class="nx">doodadId</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodad</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">doodad</span> <span class="o">||</span> <span class="o">!</span><span class="nx">doodad</span><span class="p">.</span><span class="nx">isLoaded</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s1">'Loading doodad details'</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">code</span><span class="p">&gt;</span>
+        <span class="si">{</span> <span class="nx">doodad</span><span class="p">.</span><span class="nx">value</span> <span class="si">}</span>
+      <span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">mapStateToProps</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="nx">ownProps</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodadId</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">ownProps</span><span class="p">;</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="na">doodad</span><span class="p">:</span> <span class="nx">selectDoodad</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="nx">doodadId</span><span class="p">)</span>
+  <span class="p">};</span>
+<span class="p">};</span>
+
+<span class="kd">const</span> <span class="nx">mapDispatchToProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">getDoodad</span><span class="p">:</span> <span class="nx">actionCreators</span><span class="p">.</span><span class="nx">getDoodad</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">,</span> <span class="nx">mapDispatchToProps</span><span class="p">)(</span><span class="nx">ViewDoodadDetails</span><span class="p">);</span>
+</code></pre></div></div>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ViewDoodads.js</span>
+
+<span class="k">import</span> <span class="nx">React</span><span class="p">,</span> <span class="p">{</span> <span class="nx">Component</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">PropTypes</span> <span class="k">from</span> <span class="s1">'prop-types'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">connect</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react-redux'</span><span class="p">;</span>
+
+<span class="k">import</span> <span class="nx">ViewDoodadDetails</span> <span class="k">from</span> <span class="s1">'./ViewDoodadDetails'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">selectDoodadList</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'./selectors'</span><span class="p">;</span>
+<span class="k">import</span> <span class="o">*</span> <span class="k">as</span> <span class="nx">actionCreators</span> <span class="k">from</span> <span class="s1">'./actionCreators'</span><span class="p">;</span>
+
+<span class="kd">class</span> <span class="nx">ViewDoodads</span> <span class="kd">extends</span> <span class="nx">Component</span> <span class="p">{</span>
+
+  <span class="kr">static</span> <span class="nx">propTypes</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1">// injected</span>
+    <span class="na">getDoodadList</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">func</span><span class="p">.</span><span class="nx">isRequired</span><span class="p">,</span>
+    <span class="na">doodadList</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">shape</span><span class="p">({</span>
+      <span class="na">value</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">arrayOf</span><span class="p">(</span><span class="nx">PropTypes</span><span class="p">.</span><span class="nx">object</span><span class="p">),</span>
+      <span class="na">isLoaded</span><span class="p">:</span> <span class="nx">PropTypes</span><span class="p">.</span><span class="nx">bool</span><span class="p">.</span><span class="nx">isRequired</span>
+    <span class="p">})</span>
+  <span class="p">};</span>
+
+  <span class="kd">constructor</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">super</span><span class="p">();</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">doodadId</span><span class="p">:</span> <span class="kc">null</span>
+    <span class="p">};</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">handleChange</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">handleChange</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="nx">componentDidMount</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">getDoodadList</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="nx">handleChange</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">doodadId</span> <span class="o">=</span> <span class="nx">event</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span> <span class="nx">doodadId</span> <span class="p">});</span>
+  <span class="p">}</span>
+
+  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodadList</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">doodadId</span> <span class="p">}</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">doodadList</span> <span class="o">||</span> <span class="o">!</span><span class="nx">doodadList</span><span class="p">.</span><span class="nx">isLoaded</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s1">'Loading doodad list...'</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+      <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h4</span><span class="p">&gt;</span>Select a doodad<span class="p">&lt;/</span><span class="nt">h4</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">select</span> <span class="na">value=</span><span class="si">{</span> <span class="nx">doodadId</span> <span class="si">}</span> <span class="na">onChange=</span><span class="si">{</span> <span class="k">this</span><span class="p">.</span><span class="nx">handleChange</span> <span class="si">}</span><span class="p">&gt;</span>
+          <span class="si">{</span> <span class="nx">doodadList</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">doodad</span> <span class="o">=&gt;</span> <span class="p">(</span>
+            <span class="p">&lt;</span><span class="nt">option</span> <span class="na">value=</span><span class="si">{</span> <span class="nx">doodad</span><span class="p">.</span><span class="nx">id</span> <span class="si">}</span><span class="p">&gt;</span><span class="si">{</span> <span class="nx">doodad</span><span class="p">.</span><span class="nx">name</span> <span class="si">}</span><span class="p">&lt;/</span><span class="nt">option</span><span class="p">&gt;</span>
+          <span class="p">))</span> <span class="si">}</span>
+        <span class="p">&lt;/</span><span class="nt">select</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">ViewDoodadDetails</span> <span class="na">doodadId=</span><span class="si">{</span> <span class="nx">doodadId</span> <span class="si">}</span><span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">mapStateToProps</span> <span class="o">=</span> <span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span>
+  <span class="na">doodadList</span><span class="p">:</span> <span class="nx">selectDoodadList</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span>
+<span class="p">});</span>
+
+<span class="kd">const</span> <span class="nx">mapDispatchToProps</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">getDoodadList</span><span class="p">:</span> <span class="nx">actionCreators</span><span class="p">.</span><span class="nx">getDoodadList</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">,</span> <span class="nx">mapDispatchToProps</span><span class="p">)(</span><span class="nx">ViewDoodads</span><span class="p">);</span>
+</code></pre></div></div>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// index.js</span>
+
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="s1">'react'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">render</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react-dom'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">createStore</span><span class="p">,</span> <span class="nx">applyMiddleware</span><span class="p">,</span> <span class="nx">combineReducers</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'redux'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Provider</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'react-redux'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">thunk</span> <span class="k">from</span> <span class="s1">'redux-thunk'</span><span class="p">;</span>
+
+<span class="k">import</span> <span class="nx">reducers</span> <span class="k">from</span> <span class="s1">'./reducers'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">ViewDoodads</span> <span class="k">from</span> <span class="s1">'./ViewDoodads'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">rootReducer</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="p">(</span><span class="nx">reducers</span><span class="p">);</span>
+<span class="kd">const</span> <span class="nx">store</span> <span class="o">=</span> <span class="nx">createStore</span><span class="p">(</span><span class="nx">rootReducer</span><span class="p">,</span> <span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">thunk</span><span class="p">));</span>
+
+<span class="nx">render</span><span class="p">(</span>
+  <span class="p">&lt;</span><span class="nc">Provider</span> <span class="na">store=</span><span class="si">{</span> <span class="nx">store</span> <span class="si">}</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nc">ViewDoodads</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;/</span><span class="nc">Provider</span><span class="p">&gt;,</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'root'</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>We are now ready to start viewing doodads. Using <a href="https://github.com/reduxjs/react-redux#readme">react-redux</a> allows our
+components to be decoupled from Redux workings. Now, there is a lot we
+could talk about here. However, the focus of this write-up is on the work
+required for tying our requested API data to Redux.</p>
+
+<p>Without a framework for setting up actions and reducers, a lot of
+copy/paste boilerplate is required, which is tedious and error-prone.
+To mitigate this, let us now take a look at the <strong>Reduxful</strong> project.</p>
+
+<h3 id="origins">Origins</h3>
+
+<p>This project was born out of the development for the new hosting products 
+web app. This new web app has the user experience goal of being a gateway for
+users to manage all their hosting products in a single space. The developer
+experience goal is to get product developers off of technology islands and to
+build towards a single web app using shared technologies.</p>
+
+<p>A new team was formed and tasked with getting this hosting project spun up. In
+the early stages, this team quickly recognized that there were going be many
+requests to several hosting product APIs and endpoints, with potentially just
+as many ways implemented to keep track of requests and responses in the app.
+So, as part of our strategy to simplify setups and unify development practices,
+we developed Reduxful.</p>
+
+<p>Reduxful actually started out as a Fluxible project, before the effort at
+GoDaddy to standardize on Redux across the company. In effect, we have
+implemented this API on two different Flux-like implementations, by which its
+abstractions made the migration of our apps across implementations much easier.</p>
+
+<h3 id="what-it-does">What it does</h3>
+
+<p>Reduxful aims to reduce the boilerplate for managing requested data in Redux
+state by generating <strong>actions</strong>, <strong>reducers</strong>, and <strong>selectors</strong> for you.
+Consider this brief example:</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// doodadApi.js</span>
+
+<span class="k">import</span> <span class="nx">Reduxful</span><span class="p">,</span> <span class="p">{</span> <span class="nx">makeFetchAdapter</span> <span class="p">}</span> <span class="k">from</span> <span class="s1">'reduxful'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">fetch</span> <span class="k">from</span> <span class="s1">'cross-fetch'</span><span class="p">;</span>
+
+<span class="c1">// Make an adapter for Fetch API</span>
+<span class="kd">const</span> <span class="nx">requestAdapter</span> <span class="o">=</span> <span class="nx">makeFetchAdapter</span><span class="p">(</span><span class="nx">fetch</span><span class="p">);</span>
+
+<span class="c1">// Describe a RESTful service as a simple object:</span>
+<span class="kd">const</span> <span class="nx">apiDesc</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">getDoodad</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">url</span><span class="p">:</span> <span class="s1">'http://api.my-service.com/doodads/:doodadId'</span>
+  <span class="p">},</span>
+  <span class="na">getDoodadList</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">url</span><span class="p">:</span> <span class="s1">'http://api.my-service.com/doodads'</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// Create a Reduxful instance</span>
+<span class="k">export</span> <span class="k">default</span> <span class="k">new</span> <span class="nx">Reduxful</span><span class="p">(</span><span class="s1">'doodadApi'</span><span class="p">,</span> <span class="nx">apiDesc</span><span class="p">,</span> <span class="p">{</span> <span class="nx">requestAdapter</span> <span class="p">});</span>
+</code></pre></div></div>
+
+<p>As you can see, setting up and interacting with a RESTful endpoint via Redux is
+simple and straightforward with Reduxful. No boilerplate required! Also note,
+you don’t <em>have</em> to use fetch. If there is another request library you prefer,
+as long as you make an adapter for it, it can be used with Reduxful.</p>
+
+<p>With this Reduxful setup, we can delete our first example setup files. Now let
+us see what needs to be updated in our React code to use our new Redux tools
+generated by Reduxful.</p>
+
+<div class="language-diff highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// ViewDoodadDetails.js
+
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+<span class="gi">+ import { isLoaded } from 'reduxful';
++ import { resourceShape } from 'reduxful/react-addons' 
+</span>
+<span class="gd">- import { selectDoodad } from './selectors';
+- import * as actionCreators from './actionCreators';
+</span><span class="gi">+ import doodadApi from './doodadApi';
+</span>
+class ViewDoodadDetails extends Component {
+
+  static propTypes = {
+    doodadId: PropTypes.string.isRequired,
+    // injected
+    getDoodad: PropTypes.func.isRequired,
+<span class="gd">-    doodad: PropTypes.shape({
+-      value: PropTypes.object,
+-      isLoaded: PropTypes.bool.isRequired
+-    })
+</span><span class="gi">+    doodad: resourceShape
+</span>  };
+
+  componentDidMount() {
+    const { doodadId, getDoodad } = this.props;
+    if (doodadId) {
+      getDoodad(doodadId);
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    const { doodadId, getDoodad } = this.props;
+    if (doodadId !== prevProps.doodadId) {
+      getDoodad(doodadId);
+    }
+  }
+
+  render() {
+    const { doodad } = this.props;
+<span class="gd">-    if(!doodad || !doodad.isLoaded) {
+</span><span class="gi">+    if(!isLoaded(doodad)) {
+</span>      return 'Loading doodad details'
+    }
+
+    return (
+      &lt;code&gt;
+        { doodad.value }
+      &lt;/code&gt;
+    );
+  }
+}
+
+const mapStateToProps = (state, ownProps) =&gt; {
+  const { doodadId } = ownProps;
+  return {
+<span class="gd">-    doodad: selectDoodad(state, doodadId)
+</span><span class="gi">+    doodad: doodadApi.selectors.getDoodad(state, { doodadId })
+</span>  }
+};
+
+const mapDispatchToProps = {
+<span class="gd">-  getDoodad: actionCreators.getDoodad
+</span><span class="gi">+  getDoodad: doodadApi.actionCreators.getDoodad
+</span>};
+
+export default connect(mapStateToProps, mapDispatchToProps)(ViewDoodadDetails);
+</code></pre></div></div>
+
+<div class="language-diff highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// ViewDoodads.js
+
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+<span class="gi">+ import { isLoaded } from 'reduxful';
++ import { resourceShape } from 'reduxful/react-addons' 
+</span>
+import ViewDoodadDetails from './ViewDoodadDetails';
+<span class="gd">- import { selectDoodadList } from './selectors';
+- import * as actionCreators from './actionCreators';
+</span><span class="gi">+ import doodadApi from './doodadApi';
+</span>
+class ViewDoodads extends Component {
+
+  static propTypes = {
+    // injected
+    getDoodadList: PropTypes.func.isRequired,
+<span class="gd">-    doodadList: PropTypes.shape({
+-      value: PropTypes.arrayOf(PropTypes.object),
+-      isLoaded: PropTypes.bool.isRequired
+-    })
+</span><span class="gi">+   doodadList: resourceShape
+</span>  };
+
+  constructor() {
+    super();
+
+    this.state = {
+      doodadId: null
+    };
+
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  componentDidMount() {
+    this.props.getDoodadList();
+  }
+
+  handleChange(event) {
+    const doodadId = event.target.value;
+    this.setState({ doodadId });
+  }
+
+  render() {
+    const { doodadList } = this.props;
+    const { doodadId } = this.state;
+
+<span class="gd">-    if(!doodadList || !doodadList.isLoaded) {
+</span><span class="gi">+    if(!isLoaded(doodadList)) {
+</span>      return 'Loading doodad list...';
+    }
+
+    return (
+      &lt;div&gt;
+        &lt;h4&gt;Select a doodad&lt;/h4&gt;
+        &lt;select value={ doodadId } onChange={ this.handleChange }&gt;
+          { doodadList.value.map(doodad =&gt; (
+            &lt;option value={ doodad.id }&gt;{ doodad.name }&lt;/option&gt;
+          )) }
+        &lt;/select&gt;
+        &lt;ViewDoodadDetails doodadId={ doodadId }/&gt;
+      &lt;/div&gt;
+    );
+  }
+}
+
+const mapStateToProps = (state) =&gt; ({
+<span class="gd">-  doodadList: selectDoodadList(state)
+</span>  doodadList: doodadApi.selectors.getDoodadList(state)
+});
+
+const mapDispatchToProps = {
+<span class="gd">-  getDoodadList: actionCreators.getDoodadList
+</span>  getDoodadList: doodadApi.actionCreators.getDoodadList
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(ViewDoodads);
+</code></pre></div></div>
+
+<div class="language-diff highlighter-rouge"><div class="highlight"><pre class="highlight"><code>// index.js
+
+import React from 'react';
+import { render } from 'react-dom';
+import { createStore, applyMiddleware, combineReducers } from 'redux';
+import { Provider } from 'react-redux';
+import thunk from 'redux-thunk';
+
+<span class="gd">- import reducers from './reducers';
+</span><span class="gi">+ import doodadApi from './doodadApi';
+</span>import ViewDoodads from './ViewDoodads';
+
+<span class="gd">- const rootReducer = combineReducers(reducers)
+</span><span class="gi">+ const rootReducer = combineReducers(doodadApi.reducers)
+</span>const store = createStore( rootReducer, applyMiddleware(thunk) );
+
+render(
+  &lt;Provider store={ store }&gt;
+    &lt;ViewDoodads /&gt;
+  &lt;/Provider&gt;,
+  document.getElementById('root')
+);
+</code></pre></div></div>
+
+<p>In our React code, the use of actionCreators and selectors did not really
+change, only where they are imported from. The only other changes to note are
+that there is a convenience function for checking if a resource <code class="highlighter-rouge">isLoaded</code>, as
+well as a pre-configured <code class="highlighter-rouge">resourceShape</code> for use with React prop types.</p>
+
+<p>This leads me to talking about resources in Reduxful. A resource is term for
+the state object which keeps track of the status of a request and its response.
+When a request goes out, a resource is created or updated with an <code class="highlighter-rouge">isUpdating</code>
+property. When the response comes back, the resource will then have either a
+<code class="highlighter-rouge">value</code> or <code class="highlighter-rouge">error</code> which contains the response body,
+and <code class="highlighter-rouge">isLoaded</code> or <code class="highlighter-rouge">hasError</code> properties set respectively,
+depending on the status of the response.</p>
+
+<p>Most of the time, multiple requests to the same endpoint are needed, yet with
+different query or path parameters. As such, resources are keyed in state by an
+endpoint’s name and the params passed to it. This allows tracking of multiple
+requests uniquely.</p>
+
+<p>Besides the generation of Redux tooling around your APIs, Reduxful also handles 
+throttling of repeated requests and debouncing in-flight requests, 
+along with several other features for working with RESTful data in Redux.</p>
+
+<h3 id="from-here">From here</h3>
+
+<p>This article is not intended to be a tutorial or even a full overview of
+Reduxful and its many features. Instead, the goal is to introduce it and its
+simplicity to the community. Check out <a href="https://github.com/godaddy/reduxful#readme">the docs</a> for more details and
+examples. Also, be sure to see the project on GitHub for more complete examples
+of how you could use <a href="https://github.com/godaddy/reduxful/blob/master/docs/react-examples.md#using-with-react">Reduxful with React</a>.</p>
+
+<h4 id="additional-topics">Additional topics</h4>
+
+<ul>
+  <li><a href="https://reactjs.org">React</a></li>
+  <li><a href="https://redux.js.org">Redux</a></li>
+  <li><a href="https://github.com/lquixada/cross-fetch#readme">cross-fetch</a></li>
+  <li><a href="https://github.com/reduxjs/redux-thunk#readme">redux-thunk</a></li>
+</ul>
+
+
+
+  <div class="text-center mb-1">
+  <div class="addthis_inline_share_toolbox"></div>
+</div>
+
+  
+
+<hr>
+
+<div class="authors">
+  <h4 class="mb-3">
+  
+  Author
+  
+</h4>
+
+  <div class="row">
+    
+    <div class="col-12">
+      <div class="author mb-3">
+        <a href="https://www.linkedin.com/in/andrewgerard/">
+          <img class="rounded mr-2" src="https://avatars0.githubusercontent.com/u/82775?s=400&v=4" alt="Andrew Gerard" width="64">
+          <span class="author-details">
+            <h6>Andrew Gerard</h6>
+            
+          </span>
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+</div>
+
+<footer class="page-footer text-light bg-theme-grey-dark">
+    <div class="container py-3">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <h5 class="text-white text-font-headline">
+            GoDaddy Engineering
+          </h5>
+          <p>
+            At GoDaddy we build next-generation experiences that empower the world's small business owners to start and grow their independent ventures.
+
+            <a href="https://careers.godaddy.com/?source=APPLICANT_SOURCE-3-118&utm_source=godaddy-oss" title="Work at GoDaddy">
+              Join us!
+            </a>
+          </p>
+        </div>
+        <div class="col-12 col-md-4 offset-md-2">
+          <h5 class="text-white text-font-headline">
+            On the web
+          </h5>
+          <ul class="list-unstyled mb-0">
+  
+  
+  <li>
+    <a class="text-light" href="https://github.com/godaddy" title="godaddy on GitHub">
+      GitHub
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://twitter.com/GodaddyOSS" title="GodaddyOSS on Twitter">
+      Twitter
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://dribbble.com/GoDaddy" title="GoDaddy on Dribbble">
+      Dribbble
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="text-light" href="https://www.facebook.com/GoDaddy" title="GoDaddy on Facebook">
+      Facebook
+    </a>
+  </li>
+  
+  
+</ul>
+
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright bg-extra-dark text-center text-light font-weight-light py-3">
+      <small>
+        Copyright © 1999 - 2018 GoDaddy Operating Company, LLC. All Rights Reserved.
+
+      </small>
+    </div>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-37178807-20', 'auto');
+  ga('require', 'outboundLinkTracker');
+  ga('send', 'pageview');
+</script>
+
+
+
+<script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5b039a09ed801a5d"></script>
+
+
+
+
+
+
+</body>
+</html>
+
